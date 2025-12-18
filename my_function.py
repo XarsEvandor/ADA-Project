@@ -10,6 +10,15 @@ from matplotlib_venn import venn2
 from src.data.load_data import *
 from src.utils.results_utils import *
 
+import plotly.graph_objects as go
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from plotly.subplots import make_subplots
+p
+
+
+
+
 
 def plot_most_wanted_plotly(
     df: pd.DataFrame,
@@ -706,3 +715,685 @@ def visualiser_sarcasme_only_red(df, sample_size=5000):
     )
 
     fig.show()
+
+
+# Part 2
+
+
+# Distribution of hyperlinks depending on the semantic distance
+
+
+def plot_semantic_distance_line_negative(merge_df, sub_df, nbins=50):
+    """
+    Displays a Line Chart of interaction VOLUME vs. Normalized Semantic Distance.
+    Shows ONLY negative hyperlinks to focus on "The Radius of Rivalry".
+    """
+    
+    # 1. Identify embedding columns
+    emb_cols = [c for c in sub_df.columns if str(c).startswith('emb_') and c != 'emb_norm']
+    
+    # 2. Vector Preparation
+    subs_vec = sub_df[['SUBREDDIT'] + emb_cols].set_index('SUBREDDIT')
+    
+    # Filter valid links
+    valid_links = merge_df[
+        merge_df['SOURCE_SUBREDDIT'].isin(subs_vec.index) & 
+        merge_df['TARGET_SUBREDDIT'].isin(subs_vec.index)
+    ].copy()
+    
+    # 3. Vector Calculation
+    src_vectors = subs_vec.loc[valid_links['SOURCE_SUBREDDIT']].values
+    tgt_vectors = subs_vec.loc[valid_links['TARGET_SUBREDDIT']].values
+    
+    # Raw Euclidean Distance
+    raw_distances = np.linalg.norm(src_vectors - tgt_vectors, axis=1)
+    
+    # 4. Normalization (0-1)
+    min_dist = raw_distances.min()
+    max_dist = raw_distances.max()
+    
+    if max_dist - min_dist == 0:
+        valid_links['semantic_distance_norm'] = 0
+    else:
+        valid_links['semantic_distance_norm'] = (raw_distances - min_dist) / (max_dist - min_dist)
+    
+
+    # Filter for ONLY Negative Links (Attacks)
+    neg_dist = valid_links[valid_links['LINK_SENTIMENT'] == -1]['semantic_distance_norm']
+
+    # 5. Calculate Bins (np.histogram)
+    neg_counts, bin_edges = np.histogram(neg_dist, bins=nbins, range=(0,1))
+    
+    # Calculate bin centers for the X-axis
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    # 6. Create Plot (Line Chart)
+    fig = go.Figure()
+
+    # Negative Links Line (Red)
+    fig.add_trace(go.Scatter(
+        x=bin_centers,
+        y=neg_counts,
+        mode='lines',
+        name='Negative Links (Attacks)',
+        line=dict(color='#EF553B', width=4),
+        fill='tozeroy', 
+        fillcolor='rgba(239, 85, 59, 0.15)'
+    ))
+
+    # 7. Layout
+    fig.update_layout(
+        # Configuration pour centrer le titre
+        title={
+            'text': '<b>Neighborly Friction: Mapping the Distance of Discord</b><br>',
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        xaxis_title='Semantic Distance',
+        yaxis_title='Number of Hostile Hyperlinks',
+        template='plotly_white',
+        width=900, 
+        height=600,
+        legend=dict(x=0.75, y=0.95),
+        hovermode="x" 
+    )
+    
+    fig.show()
+
+
+
+
+
+def evaluate_kmeans_clusters(df, start_k=2, end_k=40, emb_prefix='emb_'):
+    """
+    Runs K-Means for a range of K, calculates Inertia and Silhouette scores,
+    and plots them on a dual-axis chart to help find the optimal K.
+    """
+    # 1. Prepare Data
+    print("Preparing data...")
+    # Select columns starting with prefix (e.g., 'emb_') but exclude 'emb_norm'
+    emb_cols = [c for c in df.columns if str(c).startswith(emb_prefix) and c != 'emb_norm']
+    
+    if not emb_cols:
+        print(f"Error: No columns found starting with '{emb_prefix}'")
+        return
+        
+    X = df[emb_cols].values
+    print(f"Data shape: {X.shape}")
+
+    # 2. Run Clustering Loop
+    range_n_clusters = range(start_k, end_k + 1)
+    inertias = []
+    silhouette_scores = []
+
+    print(f"Calculating Inertia and Silhouette scores for K={start_k} to {end_k}...")
+
+    for k in range_n_clusters:
+        # Initialize KMeans (n_init=10 is default but good to be explicit)
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        cluster_labels = kmeans.fit_predict(X)
+        
+        # Store metrics
+        inertias.append(kmeans.inertia_)
+        score = silhouette_score(X, cluster_labels)
+        silhouette_scores.append(score)
+
+    # 3. Plot Results
+    print("Plotting results...")
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    # Primary Axis: Inertia (Elbow Method)
+    color_inertia = 'tab:blue'
+    ax1.set_xlabel('Number of Clusters (K)')
+    ax1.set_ylabel('Inertia (Lower is better)', color=color_inertia, fontweight='bold')
+    ax1.plot(range_n_clusters, inertias, 'o--', color=color_inertia, label='Inertia')
+    ax1.tick_params(axis='y', labelcolor=color_inertia)
+    ax1.grid(True, linestyle='--', alpha=0.6)
+
+    # Secondary Axis: Silhouette Score
+    ax2 = ax1.twinx()
+    color_sil = 'tab:red'
+    ax2.set_ylabel('Silhouette Score (Higher is better)', color=color_sil, fontweight='bold')
+    ax2.plot(range_n_clusters, silhouette_scores, 's-', color=color_sil, label='Silhouette')
+    ax2.tick_params(axis='y', labelcolor=color_sil)
+
+    # Final Layout
+    plt.title('Optimal K Analysis: Elbow Method vs. Silhouette Score')
+    # Set x-ticks to show every integer if range is small, or steps if large
+    if len(range_n_clusters) < 30:
+        plt.xticks(range_n_clusters)
+    else:
+        plt.xticks(range(start_k, end_k + 1, 2))
+        
+    fig.tight_layout()
+    plt.show()
+
+
+
+def run_kmeans_and_analyze(df, k=19, emb_prefix='emb_'):
+    """
+    Runs K-Means clustering on embedding columns, assigns cluster labels,
+    and prints the percentage distribution of subreddits per cluster.
+    """
+    print(f"--- Running K-Means with K={k} ---")
+
+    # 1. Extract Embeddings
+    # Select columns starting with prefix, excluding 'emb_norm' if present
+    emb_cols = [c for c in df.columns if str(c).startswith(emb_prefix) and c != 'emb_norm']
+    
+    if not emb_cols:
+        print(f"Error: No columns found starting with '{emb_prefix}'")
+        return df
+        
+    X = df[emb_cols].values
+    
+    # 2. Fit K-Means
+    # n_init=10 is explicit to ensure stability across runs (using K-Means++ logic)
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    
+    # Assign labels to the DataFrame
+    # Using .copy() ensures we don't trigger SettingWithCopy warnings if df is a slice
+    df_result = df.copy()
+    df_result['cluster'] = kmeans.fit_predict(X)
+    
+    # 3. Analyze & Print Proportions
+    print("Proportion of subreddits per cluster (%):")
+    print("-" * 45)
+    
+    # Calculate counts and percentages
+    counts = df_result['cluster'].value_counts().sort_index()
+    proportions = df_result['cluster'].value_counts(normalize=True).sort_index() * 100
+    
+    # Formatted output
+    for cluster_id, pct in proportions.items():
+        count = counts[cluster_id]
+        print(f"Cluster {cluster_id:02d}: {pct:6.2f}%  ({count} subreddits)")
+        
+    print("-" * 45)
+    
+    # Optional: Quick check for dominant clusters
+    max_cluster = proportions.idxmax()
+    max_prop = proportions.max()
+    if max_prop > 50:
+        print(f" Note: Cluster {max_cluster} is very large ({max_prop:.2f}%).")
+        print("   Even if it contains >50% of subs, check if its total *activity* is balanced.")
+        
+    return df_result
+
+
+def analyze_cluster_contents(sub_df, merge_df, cluster_col='cluster', n_show=20):
+    """
+    1. Calculates total activity (Source + Target counts) for each subreddit.
+    2. Prints the Top N most active subreddits per cluster.
+    3. Prints N random subreddits per cluster (to check diversity).
+    
+    Returns:
+        pd.DataFrame: The sub_df updated with an 'activity' column.
+    """
+    print("--- Calculating Activity Metrics ---")
+    
+    # 1. Prepare activity data (Sum of outgoing + incoming links)
+    # Using .add(..., fill_value=0) ensures we don't get NaN if a sub only exists in one column
+    src_counts = merge_df['SOURCE_SUBREDDIT'].value_counts()
+    tgt_counts = merge_df['TARGET_SUBREDDIT'].value_counts()
+    total_activity = src_counts.add(tgt_counts, fill_value=0)
+    
+    # Map to the main dataframe
+    # We use a copy to avoid SettingWithCopyWarning
+    df_result = sub_df.copy()
+    df_result['activity'] = df_result['SUBREDDIT'].map(total_activity).fillna(0).astype(int)
+    
+    # Get list of clusters (sorted)
+    if cluster_col not in df_result.columns:
+        print(f"Error: Column '{cluster_col}' not found in dataframe.")
+        return df_result
+        
+    clusters = sorted(df_result[cluster_col].unique())
+    
+    # 2. Print Top Active Subreddits
+    print(f"\n=== TOP {n_show} MOST ACTIVE SUBREDDITS PER CLUSTER ===")
+    for c in clusters:
+        cluster_subs = df_result[df_result[cluster_col] == c]
+        # Sort by activity descending
+        top_subs = cluster_subs.sort_values('activity', ascending=False).head(n_show)['SUBREDDIT'].tolist()
+        print(f"Cluster {c}: {', '.join(top_subs)}")
+
+    # 3. Print Random Subreddits
+    print(f"\n=== {n_show} RANDOM SUBREDDITS PER CLUSTER (Diversity Check) ===")
+    for c in clusters:
+        cluster_subs = df_result[df_result[cluster_col] == c]
+        # Sample safely (handle cases where cluster size < n_show)
+        n_sample = min(n_show, len(cluster_subs))
+        if n_sample > 0:
+            random_subs = cluster_subs.sample(n=n_sample, random_state=42)['SUBREDDIT'].tolist()
+            print(f"Cluster {c}: {', '.join(random_subs)}")
+        else:
+            print(f"Cluster {c}: (Empty)")
+            
+    return df_result
+
+
+
+
+def plot_dual_warfare_matrix(interactions_df, embeddings_df, tribe_mapping, min_interactions=5):
+    """
+    Plots two matrices side-by-side:
+    1. Standard Heatmap: Visualizes the 'Fixation' (Intensity/Ratio) clearly.
+    2. Bubble Matrix: Visualizes the 'Volume' (Size) + 'Fixation' (Color).
+    """
+    # --- 1. Data Prep ---
+    sub_to_cluster = embeddings_df.set_index('SUBREDDIT')['cluster'].to_dict()
+    
+    # Filter for Attacks (Negative Links)
+    df_neg = interactions_df[interactions_df['LINK_SENTIMENT'] == -1].copy()
+    
+    # Map to Tribes
+    df_neg['Source_Cluster'] = df_neg['SOURCE_SUBREDDIT'].map(sub_to_cluster)
+    df_neg['Target_Cluster'] = df_neg['TARGET_SUBREDDIT'].map(sub_to_cluster)
+    df_neg.dropna(subset=['Source_Cluster', 'Target_Cluster'], inplace=True)
+    
+    df_neg['Source_Tribe'] = df_neg['Source_Cluster'].map(tribe_mapping)
+    df_neg['Target_Tribe'] = df_neg['Target_Cluster'].map(tribe_mapping)
+    
+    # --- 2. Calculate Metrics ---
+    # Group by Tribe-to-Tribe
+    matrix_df = df_neg.groupby(['Source_Tribe', 'Target_Tribe']).size().reset_index(name='Attack_Volume')
+    
+    # Calculate Total Outgoing Attacks per Tribe (to normalize for 'Fixation')
+    total_outgoing = df_neg.groupby('Source_Tribe').size().to_dict()
+    
+    # Calculate 'Fixation Score' (% of a Tribe's total attacks directed at this specific target)
+    matrix_df['Fixation_Score'] = matrix_df.apply(
+        lambda x: (x['Attack_Volume'] / total_outgoing.get(x['Source_Tribe'], 1)) * 100, axis=1
+    )
+    
+    # Filter noise
+    matrix_df = matrix_df[matrix_df['Attack_Volume'] >= min_interactions]
+    
+    # Get sorted list of tribes for axes
+    all_tribes = sorted(list(set(tribe_mapping.values())))
+    
+    # --- 3. Prepare Grid Data ---
+    # We need a full grid for the heatmap (pivot table)
+    pivot_fixation = matrix_df.pivot(index='Source_Tribe', columns='Target_Tribe', values='Fixation_Score').reindex(index=all_tribes, columns=all_tribes).fillna(0)
+    
+    # --- 4. Plotting Side-by-Side ---
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.45, 0.55], # Give Bubble chart slightly more space
+        subplot_titles=("<b>The Obsession Map</b> (Intensity %)", "<b>The Warfare Matrix</b> (Volume and Intensity)"),
+        horizontal_spacing=0.15
+    )
+
+    # --- PLOT 1: Regular Heatmap (The "Intent") ---
+    # Shows pure Fixation Score (Color)
+    fig.add_trace(go.Heatmap(
+        z=pivot_fixation.values,
+        x=all_tribes,
+        y=all_tribes,
+        colorscale='Reds',
+        colorbar=dict(title="Fixation %", x=0.42, len=0.8), # Place colorbar in middle
+        hovertemplate='Source: %{y}<br>Target: %{x}<br>Fixation: %{z:.1f}%<extra></extra>'
+    ), row=1, col=1)
+
+    # --- PLOT 2: Bubble Matrix (The "Impact") ---
+    # Size = Volume, Color = Fixation Score
+    
+    # Normalize size for bubbles
+    max_vol = matrix_df['Attack_Volume'].max()
+    sizeref = 2.0 * max_vol / (30**2) # Scaling factor
+    
+    fig.add_trace(go.Scatter(
+        x=matrix_df['Target_Tribe'],
+        y=matrix_df['Source_Tribe'],
+        mode='markers',
+        marker=dict(
+            size=matrix_df['Attack_Volume'],
+            sizemode='area',
+            sizeref=sizeref,
+            sizemin=3,
+            color=matrix_df['Fixation_Score'], # Color matches the heatmap
+            colorscale='Reds',
+            showscale=False, # Shared color scale
+            line=dict(width=1, color='DarkSlateGrey')
+        ),
+        hovertemplate='<b>Aggressor:</b> %{y}<br><b>Victim:</b> %{x}<br>Volume: %{marker.size}<br>Fixation: %{marker.color:.1f}%<extra></extra>'
+    ), row=1, col=2)
+
+    # --- 5. Layout ---
+    fig.update_layout(
+        title_text="<b>The Tribal Warfare Matrix: Intent vs. Impact</b>",
+        height=700,
+        width=1300,
+        template='plotly_white',
+        showlegend=False
+    )
+    
+    # Update Axes
+    fig.update_xaxes(title_text="Victim Tribe", tickangle=45, row=1, col=1)
+    fig.update_yaxes(title_text="Aggressor Tribe", row=1, col=1, autorange='reversed') # Reverse Y for matrix logic
+    
+    fig.update_xaxes(title_text="Victim Tribe", tickangle=45, row=1, col=2)
+    fig.update_yaxes(title_text="Aggressor Tribe", row=1, col=2, showticklabels=False, autorange='reversed') # Hide Y labels on right plot to save space
+
+    fig.show()
+
+
+
+
+def create_tribe_intelligence_df(sub_merged_df, merge_df, tribe_mapping):
+    """
+    Consolidates cluster statistics and inter-tribe conflict data into a 
+    master 'Tribe Intelligence' DataFrame.
+    """
+    
+    # 1. Calculate Cluster Stats (Size & Activity)
+    tribe_df = sub_merged_df.groupby('cluster').agg(
+        cluster_size=('SUBREDDIT', 'count'),
+        cluster_activity=('activity', 'sum') 
+    ).reset_index()
+
+    # Add readable tribe names
+    tribe_df['cluster_name'] = tribe_df['cluster'].map(tribe_mapping)
+
+    # 2. Map Clusters to Interactions
+    # Create local copies to avoid SettingWithCopy warnings
+    interactions = merge_df.copy()
+    sub_to_cluster = sub_merged_df.set_index('SUBREDDIT')['cluster'].to_dict()
+    
+    interactions['source_cluster'] = interactions['SOURCE_SUBREDDIT'].map(sub_to_cluster)
+    interactions['target_cluster'] = interactions['TARGET_SUBREDDIT'].map(sub_to_cluster)
+
+    # 3. Analyze Inter-Cluster Conflict (Negative Links Only)
+    neg_links = interactions[interactions['LINK_SENTIMENT'] == -1]
+    attack_counts = neg_links.groupby(['source_cluster', 'target_cluster']).size().reset_index(name='count')
+
+    # 4. Identify Top 3 Rivals for Each Tribe
+    top_attackers_num, top_victims_num = [], []
+    top_attackers_name, top_victims_name = [], []
+
+    sorted_clusters = sorted(tribe_df['cluster'].unique())
+
+    for cluster_id in sorted_clusters:
+        # --- Incoming: Who attacks THIS tribe? ---
+        incoming = attack_counts[attack_counts['target_cluster'] == cluster_id]
+        top_inc = incoming.sort_values('count', ascending=False).head(3)
+        
+        inc_ids = top_inc['source_cluster'].astype(int).tolist()
+        inc_names = [tribe_mapping.get(i, f"Cluster {i}") for i in inc_ids]
+        
+        # --- Outgoing: Who does THIS tribe attack? ---
+        outgoing = attack_counts[attack_counts['source_cluster'] == cluster_id]
+        top_out = outgoing.sort_values('count', ascending=False).head(3)
+        
+        out_ids = top_out['target_cluster'].astype(int).tolist()
+        out_names = [tribe_mapping.get(i, f"Cluster {i}") for i in out_ids]
+        
+        # Store intelligence
+        top_attackers_num.append(inc_ids)
+        top_victims_num.append(out_ids)
+        top_attackers_name.append(inc_names)
+        top_victims_name.append(out_names)
+
+    # 5. Assemble and Format the Intelligence Ledger
+    tribe_df['top_3_attackers_num'] = top_attackers_num
+    tribe_df['top_3_victims_num'] = top_victims_num
+    tribe_df['top_3_attackers_name'] = top_attackers_name
+    tribe_df['top_3_victims_name'] = top_victims_name
+
+    # Clean up column names for the Guide
+    tribe_df = tribe_df.rename(columns={'cluster': 'cluster_number'})
+    
+    cols = [
+        'cluster_number', 'cluster_name', 'cluster_size', 'cluster_activity',
+        'top_3_attackers_num', 'top_3_victims_num', 
+        'top_3_attackers_name', 'top_3_victims_name'
+    ]
+    
+    return tribe_df[cols]
+
+
+
+
+def plot_interactive_tribe_radar(interactions_df, embeddings_df, tribe_mapping, threshold=50):
+    """
+    Generates an Interactive Radar Chart with Dynamic Axes.
+    FIXED: Increased margins to prevent long Tribe names from being cut off.
+    """
+    # 1. Prepare Data
+    if 'cluster' not in embeddings_df.columns:
+        print("Error: 'cluster' column missing in embeddings_df.")
+        return
+
+    # --- Calculate Tribe Stats (Size & Activity) ---
+    stats_df = embeddings_df.copy()
+    if 'activity' not in stats_df.columns:
+        act = interactions_df['SOURCE_SUBREDDIT'].value_counts().add(
+            interactions_df['TARGET_SUBREDDIT'].value_counts(), fill_value=0
+        )
+        stats_df['activity'] = stats_df['SUBREDDIT'].map(act).fillna(0)
+    
+    stats_df['tribe'] = stats_df['cluster'].map(tribe_mapping)
+    
+    tribe_stats = stats_df.groupby('tribe').agg(
+        tribe_size=('SUBREDDIT', 'count'),
+        tribe_activity=('activity', 'sum')
+    )
+
+    # --- Prepare Radar Data ---
+    sub_to_cluster = embeddings_df.set_index('SUBREDDIT')['cluster'].to_dict()
+    df_neg = interactions_df[interactions_df['LINK_SENTIMENT'] == -1].copy()
+    
+    df_neg['Source_Cluster'] = df_neg['SOURCE_SUBREDDIT'].map(sub_to_cluster)
+    df_neg['Target_Cluster'] = df_neg['TARGET_SUBREDDIT'].map(sub_to_cluster)
+    df_neg.dropna(subset=['Source_Cluster', 'Target_Cluster'], inplace=True)
+    
+    df_neg['Source_Tribe'] = df_neg['Source_Cluster'].map(tribe_mapping)
+    df_neg['Target_Tribe'] = df_neg['Target_Cluster'].map(tribe_mapping)
+    
+    all_tribes = sorted(list(set(tribe_mapping.values())))
+    
+    # 2. Pre-calculate Data for Each Tribe
+    tribe_data_store = {}
+    
+    for focus_tribe in all_tribes:
+        relevant_df = df_neg[
+            (df_neg['Source_Tribe'] == focus_tribe) | 
+            (df_neg['Target_Tribe'] == focus_tribe)
+        ]
+        
+        in_counts = relevant_df[relevant_df['Target_Tribe'] == focus_tribe]['Source_Tribe'].value_counts()
+        out_counts = relevant_df[relevant_df['Source_Tribe'] == focus_tribe]['Target_Tribe'].value_counts()
+        
+        total_vol = in_counts.add(out_counts, fill_value=0)
+        significant_rivals = total_vol[total_vol >= threshold].index.tolist()
+        significant_rivals = sorted(significant_rivals)
+        
+        if not significant_rivals:
+            tribe_data_store[focus_tribe] = {'theta': ['None'], 'r_in': [0], 'r_out': [0], 'max': 1}
+            continue
+
+        r_in = [in_counts.get(rival, 0) for rival in significant_rivals]
+        r_out = [out_counts.get(rival, 0) for rival in significant_rivals]
+        
+        theta_final = significant_rivals + [significant_rivals[0]]
+        r_in_final = r_in + [r_in[0]]
+        r_out_final = r_out + [r_out[0]]
+        
+        local_max = max(max(r_in), max(r_out))
+        if local_max == 0: local_max = 1
+        
+        tribe_data_store[focus_tribe] = {
+            'theta': theta_final,
+            'r_in': r_in_final,
+            'r_out': r_out_final,
+            'max': local_max
+        }
+
+    # 3. Initialize Figure
+    first_tribe = all_tribes[0]
+    first_data = tribe_data_store[first_tribe]
+    s_size = int(tribe_stats.loc[first_tribe, 'tribe_size'])
+    s_act = int(tribe_stats.loc[first_tribe, 'tribe_activity'])
+    
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=first_data['r_in'], theta=first_data['theta'], fill='toself',
+        name='Attacked BY (Incoming)',
+        line_color='rgba(128, 0, 128, 0.8)', fillcolor='rgba(128, 0, 128, 0.2)', marker=dict(size=4)
+    ))
+
+    fig.add_trace(go.Scatterpolar(
+        r=first_data['r_out'], theta=first_data['theta'], fill='toself',
+        name='Attacks TO (Outgoing)',
+        line_color='rgba(255, 0, 0, 0.8)', fillcolor='rgba(255, 0, 0, 0.2)', marker=dict(size=4)
+    ))
+
+    # 4. Create Dropdown
+    buttons = []
+    for tribe in all_tribes:
+        data = tribe_data_store[tribe]
+        t_size = int(tribe_stats.loc[tribe, 'tribe_size']) if tribe in tribe_stats.index else 0
+        t_act = int(tribe_stats.loc[tribe, 'tribe_activity']) if tribe in tribe_stats.index else 0
+        
+        new_title = (
+            f"Strategic Radar: <b>{tribe}</b><br>"
+            f"<span style='font-size:14px; color:#555;'>Size: {t_size} subs | Activity: {t_act} links</span>"
+        )
+        
+        buttons.append(dict(
+            label=tribe, method="update", 
+            args=[
+                {"r": [data['r_in'], data['r_out']], "theta": [data['theta'], data['theta']]},
+                {"title": new_title, "polar.radialaxis.range": [0, data['max'] * 1.1]}
+            ]
+        ))
+
+    # 5. Layout (WITH IMPROVED MARGINS)
+    init_title = (
+        f"Strategic Radar: <b>{first_tribe}</b><br>"
+        f"<span style='font-size:14px; color:#555;'>Size: {s_size} subs | Activity: {s_act} links</span>"
+    )
+
+    fig.update_layout(
+        updatemenus=[dict(active=0, buttons=buttons, x=1.2, y=1, xanchor='left', yanchor='top')],
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, first_data['max'] * 1.1]),
+        ),
+        title=dict(text=init_title, y=0.95, x=0.5, xanchor='center', font=dict(size=20)),
+        legend=dict(x=0.5, y=-0.15, xanchor='center', orientation='h'),
+        height=800, 
+        width=1100, # Increased Width
+        # --- KEY FIX ---
+        # Large margins on Left/Right to accommodate long text labels (e.g., "Internet Culture...")
+        margin=dict(t=120, b=100, l=200, r=200) 
+    )
+
+    fig.show()
+
+
+
+def generate_interactive_ballistics_report(interactions_df, embeddings_df, tribe_mapping, target_list):
+    """
+    Regroups all Sankey logic into a single interactive tool.
+    Analyzes the flow of hostility for a specific list of High-Value Targets.
+    """
+    
+    # --- Internal Helper: Process individual subreddit data ---
+    def get_sankey_data(target_sub):
+        # 1. Get Tribe Name
+        target_cluster = embeddings_df[embeddings_df['SUBREDDIT'] == target_sub]['cluster'].values
+        tribe_name = tribe_mapping.get(target_cluster[0], "Unknown Tribe") if len(target_cluster) > 0 else "Unknown Tribe"
+
+        # 2. Calculate High-Level Stats
+        all_involving = interactions_df[
+            (interactions_df['SOURCE_SUBREDDIT'] == target_sub) | 
+            (interactions_df['TARGET_SUBREDDIT'] == target_sub)
+        ]
+        
+        if all_involving.empty:
+            return None
+
+        total_activity = len(all_involving)
+        incoming_attacks = len(interactions_df[(interactions_df['TARGET_SUBREDDIT'] == target_sub) & (interactions_df['LINK_SENTIMENT'] == -1)])
+        outgoing_attacks = len(interactions_df[(interactions_df['SOURCE_SUBREDDIT'] == target_sub) & (interactions_df['LINK_SENTIMENT'] == -1)])
+
+        # 3. Prepare Flow Data
+        sub_to_cluster = embeddings_df.set_index('SUBREDDIT')['cluster'].to_dict()
+        
+        # Incoming Attacks (Purple)
+        in_df = interactions_df[(interactions_df['TARGET_SUBREDDIT'] == target_sub) & (interactions_df['LINK_SENTIMENT'] == -1)].copy()
+        in_df['tribe'] = in_df['SOURCE_SUBREDDIT'].map(sub_to_cluster).map(tribe_mapping)
+        in_counts = in_df['tribe'].value_counts().reset_index().head(10)
+        in_counts.columns = ['tribe', 'count']
+        
+        # Outgoing Attacks (Red)
+        out_df = interactions_df[(interactions_df['SOURCE_SUBREDDIT'] == target_sub) & (interactions_df['LINK_SENTIMENT'] == -1)].copy()
+        out_df['tribe'] = out_df['TARGET_SUBREDDIT'].map(sub_to_cluster).map(tribe_mapping)
+        out_counts = out_df['tribe'].value_counts().reset_index().head(10)
+        out_counts.columns = ['tribe', 'count']
+
+        # 4. Define Nodes & Indices
+        unique_tribes_in = in_counts['tribe'].unique().tolist()
+        unique_tribes_out = out_counts['tribe'].unique().tolist()
+        label_list = unique_tribes_in + [f"r/{target_sub}"] + unique_tribes_out
+        target_idx = len(unique_tribes_in) 
+        
+        sources, targets, values, colors = [], [], [], []
+        
+        # Map Purple Links (Left to Center)
+        for _, row in in_counts.iterrows():
+            sources.append(unique_tribes_in.index(row['tribe']))
+            targets.append(target_idx)
+            values.append(row['count'])
+            colors.append("rgba(128, 0, 128, 0.6)")
+            
+        # Map Red Links (Center to Right)
+        for _, row in out_counts.iterrows():
+            sources.append(target_idx)
+            targets.append(target_idx + 1 + unique_tribes_out.index(row['tribe']))
+            values.append(row['count'])
+            colors.append("rgba(255, 0, 0, 0.6)")
+
+        return {
+            'node': dict(pad=20, thickness=20, line=dict(color="black", width=0.5), label=label_list, color="darkgray"),
+            'link': dict(source=sources, target=targets, value=values, color=colors),
+            'title': (f"<b>Flow of Hostility: r/{target_sub}</b> ({tribe_name})<br>"
+                      f"<span style='font-size:14px;'>Total Activity: <b>{total_activity}</b> | "
+                      f"<span style='color: purple;'>Incoming: <b>{incoming_attacks}</b></span> | "
+                      f"<span style='color: red;'>Outgoing: <b>{outgoing_attacks}</b></span></span>")
+        }
+
+    # --- Main Execution ---
+    fig = go.Figure()
+    buttons = []
+    
+    # Initialize with the first valid entry in the list
+    first_data = None
+    for sub in target_list:
+        data = get_sankey_data(sub)
+        if data:
+            if first_data is None:
+                first_data = data
+                fig.add_trace(go.Sankey(node=data['node'], link=data['link']))
+            
+            # Add to dropdown
+            buttons.append(dict(
+                label=f"r/{sub}",
+                method="update",
+                args=[{"node": [data['node']], "link": [data['link']]}, {"title": data['title']}]
+            ))
+
+    # Layout styling
+    fig.update_layout(
+        updatemenus=[dict(active=0, buttons=buttons, x=1.1, y=1, xanchor='left', yanchor='top')],
+        title_text=first_data['title'] if first_data else "No Data Found",
+        height=700, width=1200,
+        margin=dict(t=120, b=20, l=20, r=250),
+        template='plotly_white'
+    )
+
+    fig.show()
+
