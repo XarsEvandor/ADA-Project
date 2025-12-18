@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from plotly.subplots import make_subplots
-p
+
 
 
 
@@ -1397,3 +1397,260 @@ def generate_interactive_ballistics_report(interactions_df, embeddings_df, tribe
 
     fig.show()
 
+
+
+def plot_top_sarcastic_subreddits(df, min_attacks=50, top_n=20):
+    """
+    Identifie et visualise les subreddits qui utilisent le plus le sarcasme comme arme.
+    
+    Critères :
+    - On ne garde que les communautés ayant lancé au moins 'min_attacks' attaques (pour éviter le bruit).
+    - On classe par le % d'attaques qui sont positives selon VADER (Faux Positifs).
+    """
+    print("Identification des 'Rois du Sarcasme'...")
+
+    # 1. Filtrage : On ne garde que les attaques réelles (LINK_SENTIMENT == -1)
+    attacks = df[df['LINK_SENTIMENT'] == -1].copy()
+
+    # 2. Détection du Sarcasme (Attaque mais Texte Positif)
+    # Seuil : Compound >= 0.3 et Positive >= 0.1 (Critères stricts du sarcasme)
+    attacks['is_sarcasm'] = (
+        (attacks['Compound sentiment calculated by VADER'] >= 0.3) & 
+        (attacks['Positive sentiment calculated by VADER'] >= 0.1)
+    ).astype(int)
+
+    # 3. Agrégation
+    stats = attacks.groupby('SOURCE_SUBREDDIT').agg(
+        total_attacks=('is_sarcasm', 'count'),
+        sarcastic_count=('is_sarcasm', 'sum')
+    ).reset_index()
+
+    # 4. Filtrage de robustesse (On ignore les petits subs)
+    stats = stats[stats['total_attacks'] >= min_attacks].copy()
+
+    if len(stats) == 0:
+        print(f"⚠️ Aucun subreddit avec plus de {min_attacks} attaques trouvé.")
+        return
+
+    # 5. Calcul du Ratio
+    stats['sarcasm_ratio'] = (stats['sarcastic_count'] / stats['total_attacks']) * 100
+    
+    # 6. Tri et Sélection du Top N
+    top_sarcastic = stats.sort_values('sarcasm_ratio', ascending=True).tail(top_n)
+
+    # 7. Plot (Bar Chart Horizontal)
+    fig = px.bar(
+        top_sarcastic,
+        x="sarcasm_ratio",
+        y="SOURCE_SUBREDDIT",
+        orientation='h',
+        title=f"<b>The Sarcasm Elite:</b> Top {top_n} Subreddits masking hostility as praise",
+        labels={"sarcasm_ratio": "Sarcasm Rate (%)", "SOURCE_SUBREDDIT": ""},
+        text=top_sarcastic['sarcasm_ratio'].apply(lambda x: f"{x:.1f}%"),
+        template="plotly_white",
+        color="sarcasm_ratio",
+        color_continuous_scale="Oranges" # Orange pour rappeler le danger caché
+    )
+
+    # Styling
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        height=600 + (top_n * 10),
+        xaxis_title="Percentage of Attacks detected as 'Positive' by AI",
+        xaxis=dict(range=[0, 100]), # Échelle fixe 0-100%
+        coloraxis_showscale=False
+    )
+    
+    # Annotation explicative
+    fig.add_annotation(
+        x=95, y=0,
+        text="<b>HIGH RISK ZONE</b><br>Bots will miss these attacks.<br>Human review required.",
+        showarrow=False,
+        xref="x", yref="paper",
+        font=dict(color="orange", size=12),
+        align="right"
+    )
+
+    fig.show()
+
+
+
+def plot_temporal_toxicity_heatmap(df, target_sentiment=-1, title_suffix=""):
+    """
+    Génère une Heatmap (Jours vs Heures) pour visualiser les moments chauds de la toxicité.
+    
+    Args:
+        df: Le DataFrame fusionné (merge_df).
+        target_sentiment: -1 pour les attaques/sarcasmes, 1 pour le positif.
+        title_suffix: Texte optionnel pour le titre (ex: " - Subreddit: r/Politics").
+    """
+    print("Construction de la Heatmap Temporelle...")
+
+    # 1. Préparation et Filtrage
+    # On ne garde que les interactions avec le sentiment cible (ex: -1 pour toxique)
+    target_df = df[df['LINK_SENTIMENT'] == target_sentiment].copy()
+    
+    if not pd.api.types.is_datetime64_any_dtype(target_df['TIMESTAMP']):
+        target_df['TIMESTAMP'] = pd.to_datetime(target_df['TIMESTAMP'], utc=True).dt.tz_localize(None)
+    
+    # Extraction des composants temporels
+    target_df['DayOfWeek'] = target_df['TIMESTAMP'].dt.day_name()
+    target_df['Hour'] = target_df['TIMESTAMP'].dt.hour
+    
+    # 2. Création de la Matrice (Pivot Table)
+    # On compte le nombre d'attaques par créneau (Jour, Heure)
+    heatmap_data = target_df.groupby(['Hour', 'DayOfWeek']).size().unstack(fill_value=0)
+    
+    # 3. Réorganisation Cruciale
+    # Pour avoir l'ordre Lundi -> Dimanche (sinon c'est alphabétique : Friday, Monday...)
+    days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    
+    # On s'assure que toutes les colonnes existent (même si un jour est vide)
+    for day in days_order:
+        if day not in heatmap_data.columns:
+            heatmap_data[day] = 0
+            
+    # On réordonne les colonnes et on remplit les heures manquantes (0-23)
+    heatmap_data = heatmap_data[days_order]
+    heatmap_data = heatmap_data.reindex(range(24), fill_value=0)
+
+    # 4. Plotting avec Plotly Express (imshow est optimisé pour les heatmaps)
+    fig = px.imshow(
+        heatmap_data,
+        labels=dict(x="Day of Week", y="Hour of Day", color="Attack Count"),
+        x=days_order,
+        y=[f"{h:02d}:00" for h in range(24)], # Formatage joli "09:00"
+        color_continuous_scale="Reds" if target_sentiment == -1 else "Blues",
+        aspect="auto", # Permet aux carrés de s'adapter à la taille de l'écran
+        title=f"<b>Temporal Toxicity Pattern</b>: When do they attack? {title_suffix}"
+    )
+
+    # 5. Styling "Pro"
+    fig.update_layout(
+        template="plotly_white",
+        height=600,
+        xaxis_title="",
+        yaxis_title="Time (UTC)",
+        # Ajout d'un petit espace entre les tuiles pour la lisibilité
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False, autorange="reversed"), # 00h en haut, 23h en bas
+    )
+    
+    # Ajout des valeurs textuelles dans les cases si la grille n'est pas trop chargée
+    # (Uniquement si on regarde un sous-ensemble, sinon c'est illisible)
+    if heatmap_data.max().max() < 1000:
+        fig.update_traces(text=heatmap_data.values, texttemplate="%{text}")
+
+    fig.show()
+
+
+
+
+def plot_simple_vector(df, vector_type):
+    """
+    df: Le DataFrame (title_df ou body_df)
+    vector_type: 'title' ou 'body' (pour choisir le bon titre narratif)
+    """
+    
+    # 1. Configuration Narrative (Billboard vs Bunker)
+    if vector_type.lower() == 'title':
+        plot_title = "<b>THE BILLBOARD</b> (Titles)"
+        plot_subtitle = "<i>Broadcast Weapon • High Visibility</i>"
+    else: # body
+        plot_title = "<b>THE BUNKER</b> (Body)"
+        plot_subtitle = "<i>Contained Toxicity • Active Engagement</i>"
+
+    # 2. Calcul des Données
+    # On filtre les sentiments
+    neg_count = len(df[df['LINK_SENTIMENT'] == -1])
+    pos_count = len(df[df['LINK_SENTIMENT'] == 1])
+    total = neg_count + pos_count
+    
+    # Calcul du % d'attaque pour l'affichage sur la partie rouge
+    attack_pct = (neg_count / total * 100) if total > 0 else 0
+
+    # 3. Création du Donut
+    # Rouge pour l'attaque, Gris très pâle pour le reste
+    if(vector_type == 'BODY'): 
+        colors = ['#8b0000', '#f2f2f2'] 
+    else: 
+        colors = ['#d62728', '#f2f2f2'] 
+
+    fig = go.Figure(data=[go.Pie(
+        labels=['Attacks', 'Safe Context'],
+        values=[neg_count, pos_count],
+        marker_colors=colors,
+        hole=0.6, # Trou large pour l'élégance
+        
+        # Affichage sélectif du texte :
+        # On affiche le % uniquement sur la partie Rouge. Rien sur le gris.
+        text=[f"{attack_pct:.1f}%", ""], 
+        textinfo='text', 
+        textfont_size=20,
+        textfont_color='white',
+        
+        # Le survol (hover) garde les infos détaillées si besoin
+        hoverinfo='label+percent',
+        sort=False
+    )])
+
+    # 4. Mise en page
+    fig.update_layout(
+        # Titre simple avec le sous-titre narratif
+        title_text=f"{plot_title}<br><span style='font-size:14px; color:grey'>{plot_subtitle}</span>",
+        title_x=0.5,
+        showlegend=False,
+        height=400,
+        margin=dict(t=80, b=20, l=20, r=20),
+        font=dict(family="Arial")
+    )
+
+    fig.show()
+
+
+def plot_attack_origin_comparison(title_df, body_df):
+    """
+    Compare le volume ABSOLU de liens négatifs entre Title et Body.
+    Permet de voir d'où provient la majorité de la toxicité.
+    """
+    
+    # 1. Extraction des volumes d'attaques uniquement
+    title_attacks = len(title_df[title_df['LINK_SENTIMENT'] == -1])
+    body_attacks = len(body_df[body_df['LINK_SENTIMENT'] == -1])
+    
+    total_attacks = title_attacks + body_attacks
+
+    # 2. Configuration Visuelle Narrative
+    # Rouge Vif pour le Billboard (Visible), Rouge Sombre pour le Bunker (Enfoui)
+    colors = ['#ff4d4d', '#8b0000'] 
+    
+    labels = ['THE BILLBOARD (Titles)', 'THE BUNKER (Body)']
+    values = [title_attacks, body_attacks]
+
+    # 3. Création du Graphique
+    fig = go.Figure(data=[go.Pie(
+        labels=labels,
+        values=values,
+        marker_colors=colors,
+        hole=0.5,
+        
+        # On affiche le Label et le Pourcentage clairement
+        textinfo='percent+label',
+        textfont_size=14,
+        textfont_color='white', # Blanc pour bien ressortir sur le rouge
+        
+        hoverinfo='label+value+percent', # Au survol, on voit le nombre exact
+        sort=False
+    )])
+
+    # 4. Mise en page
+    fig.update_layout(
+        title_text=f"<b>ORIGIN OF HOSTILITY</b><br><i>Distribution of the {total_attacks} detected attacks</i>",
+        title_x=0.5,
+        showlegend=False, # Pas besoin de légende, tout est écrit sur le camembert
+        height=450,
+        font=dict(family="Arial"),
+        margin=dict(t=80, b=20, l=20, r=20)
+    )
+
+    fig.show()
