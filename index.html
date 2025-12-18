@@ -8,7 +8,10 @@
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts - Tactical Typography -->
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +21,6 @@
             theme: {
                 extend: {
                     colors: {
-                        // War palette - dark with red accents
                         'war-black': '#0a0a0b',
                         'war-dark': '#12131a',
                         'war-slate': '#1a1c25',
@@ -42,79 +44,36 @@
     </script>
     
     <style>
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #12131a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #dc2626;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #991b1b;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12131a; }
+        ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #991b1b; }
 
-        /* Noise texture overlay */
         .noise-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
             z-index: 1000;
             opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
         }
 
-        /* Scanline effect (subtle) */
-        .scanlines::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.1) 2px,
-                rgba(0, 0, 0, 0.1) 4px
-            );
-        }
-
-        /* Tactical card corners */
         .tactical-card {
             position: relative;
             background: linear-gradient(135deg, #1a1c25 0%, #12131a 100%);
             border: 1px solid #2a2d3a;
         }
-        .tactical-card::before,
-        .tactical-card::after {
+        .tactical-card::before, .tactical-card::after {
             content: '';
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 12px; height: 12px;
             border-color: #dc2626;
             border-style: solid;
         }
-        .tactical-card::before {
-            top: -1px;
-            left: -1px;
-            border-width: 2px 0 0 2px;
-        }
-        .tactical-card::after {
-            bottom: -1px;
-            right: -1px;
-            border-width: 0 2px 2px 0;
-        }
+        .tactical-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .tactical-card::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-        /* Mod's Lesson briefing card */
         .briefing-card {
             background: linear-gradient(180deg, rgba(220, 38, 38, 0.1) 0%, rgba(10, 10, 11, 0.95) 100%);
             border-left: 3px solid #dc2626;
@@ -123,8 +82,7 @@
         .briefing-card::before {
             content: 'CLASSIFIED';
             position: absolute;
-            top: 8px;
-            right: 12px;
+            top: 8px; right: 12px;
             font-family: 'Source Code Pro', monospace;
             font-size: 10px;
             color: #dc2626;
@@ -132,7 +90,6 @@
             opacity: 0.6;
         }
 
-        /* Grid background */
         .grid-bg {
             background-image: 
                 linear-gradient(rgba(42, 45, 58, 0.3) 1px, transparent 1px),
@@ -140,57 +97,26 @@
             background-size: 50px 50px;
         }
 
-        /* Reveal animations */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
             transition: opacity 0.8s ease, transform 0.8s ease;
         }
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .reveal-left {
-            opacity: 0;
-            transform: translateX(-50px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        .reveal-left.active {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        .reveal.active { opacity: 1; transform: translateY(0); }
 
-        /* Stagger children */
-        .stagger-children > * {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        .stagger-children.active > *:nth-child(1) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
-        .stagger-children.active > *:nth-child(2) { transition-delay: 0.2s; opacity: 1; transform: translateY(0); }
-        .stagger-children.active > *:nth-child(3) { transition-delay: 0.3s; opacity: 1; transform: translateY(0); }
-        .stagger-children.active > *:nth-child(4) { transition-delay: 0.4s; opacity: 1; transform: translateY(0); }
+        .glow-red { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
 
-        /* Glowing red accent */
-        .glow-red {
-            box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
-        }
-
-        /* Progress bar */
         #progress-bar {
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             height: 3px;
             background: linear-gradient(90deg, #dc2626, #d97706);
             z-index: 9999;
             transition: width 0.1s ease;
         }
 
-        /* Navigation dots */
         .nav-dot {
-            width: 10px;
-            height: 10px;
+            width: 10px; height: 10px;
             border: 2px solid #6b7280;
             border-radius: 50%;
             transition: all 0.3s ease;
@@ -201,16 +127,14 @@
             box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
         }
 
-        /* Flourish embed container */
-        .flourish-container {
+        .chart-container {
             background: #12131a;
             border: 1px solid #2a2d3a;
             border-radius: 4px;
-            padding: 1rem;
-            min-height: 400px;
+            min-height: 500px;
+            width: 100%;
         }
 
-        /* Quote styling */
         .war-quote {
             font-style: italic;
             position: relative;
@@ -219,14 +143,11 @@
         .war-quote::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
+            left: 0; top: 0; bottom: 0;
             width: 3px;
             background: linear-gradient(180deg, #dc2626, transparent);
         }
 
-        /* Stat box */
         .stat-box {
             text-align: center;
             padding: 1.5rem;
@@ -248,16 +169,24 @@
             letter-spacing: 1px;
             margin-top: 0.5rem;
         }
+
+        .case-file {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(10, 10, 11, 0.9) 100%);
+            border: 1px solid #2a2d3a;
+            border-left: 3px solid #dc2626;
+        }
+
+        .action-box {
+            background: rgba(22, 163, 74, 0.1);
+            border-left: 3px solid #16a34a;
+        }
     </style>
 </head>
 <body class="bg-war-black text-war-text font-body">
-    <!-- Noise overlay -->
     <div class="noise-overlay"></div>
-    
-    <!-- Progress bar -->
     <div id="progress-bar" style="width: 0%"></div>
-
-    <!-- Scroll indicator - fixed to viewport -->
+    
+    <!-- Fixed scroll indicator -->
     <div id="scroll-indicator" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
         <div class="flex flex-col items-center gap-2 text-war-muted">
             <span class="font-mono text-xs tracking-widest">SCROLL TO DEPLOY</span>
@@ -267,38 +196,38 @@
         </div>
     </div>
     
-    <!-- Fixed navigation dots -->
+    <!-- Navigation -->
     <nav class="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-4">
         <a href="#intro" class="nav-dot active" title="Introduction"></a>
+        <a href="#cold-cases" class="nav-dot" title="Cold Cases"></a>
         <a href="#part1" class="nav-dot" title="Part 1: Topology"></a>
         <a href="#part2" class="nav-dot" title="Part 2: Semantics"></a>
-        <a href="#part3" class="nav-dot" title="Part 3: Temporal"></a>
-        <a href="#part4" class="nav-dot" title="Part 4: Linguistic"></a>
+        <a href="#part3" class="nav-dot" title="Part 3: Linguistic"></a>
+        <a href="#part4" class="nav-dot" title="Part 4: When & Where"></a>
     </nav>
 
-    <!-- ==================== HERO SECTION ==================== -->
+    <!-- ==================== HERO ==================== -->
     <header id="intro" class="min-h-screen flex flex-col justify-center items-center relative grid-bg">
         <div class="absolute inset-0 bg-gradient-to-b from-war-black via-transparent to-war-black"></div>
         
         <div class="relative z-10 text-center px-6 max-w-4xl">
-            <!-- Top classification badge -->
             <div class="inline-block mb-8 reveal">
                 <span class="font-mono text-xs tracking-[4px] text-war-red border border-war-red px-4 py-2">
-                    FIELD MANUAL // ADA-2025
+                    FIELD MANUAL // ADA-2024
                 </span>
             </div>
             
-            <h1 class="font-tactical text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 reveal" style="transition-delay: 0.2s">
+            <h1 class="font-tactical text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 reveal">
                 <span class="text-war-text">REDDIT MODERATOR'S</span><br>
                 <span class="text-war-red">SURVIVAL GUIDE</span>
             </h1>
             
-            <p class="font-mono text-war-muted text-sm md:text-base max-w-2xl mx-auto mb-8 reveal" style="transition-delay: 0.4s">
+            <p class="font-mono text-war-muted text-sm md:text-base max-w-2xl mx-auto mb-12 reveal">
                 "Being a Reddit moderator isn't just about deleting spam.<br>
                 It's about managing a diplomatic war zone."
             </p>
             
-            <div class="flex flex-wrap justify-center gap-6 mb-24 reveal" style="transition-delay: 0.6s">
+            <div class="flex flex-wrap justify-center gap-6 mb-24 reveal">
                 <div class="stat-box">
                     <div class="stat-number">55K+</div>
                     <div class="stat-label">Subreddits Analyzed</div>
@@ -308,65 +237,98 @@
                     <div class="stat-label">Dataset Range</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-number">4</div>
-                    <div class="stat-label">Survival Rules</div>
+                    <div class="stat-number">82K+</div>
+                    <div class="stat-label">Attacks Detected</div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- ==================== INTRO SECTION ==================== -->
-    <section class="py-24 px-6 relative">
+    <!-- ==================== COLD CASES ==================== -->
+    <section id="cold-cases" class="py-24 px-6 relative border-t border-war-gray">
         <div class="max-w-4xl mx-auto">
-            <div class="briefing-card p-8 reveal">
-                <p class="text-lg md:text-xl leading-relaxed text-war-text-dim">
-                    Listen up, rookie. You might think Reddit is just cats and memes. But underneath the front page, 
-                    there's a network of <span class="text-war-red font-semibold">alliances</span>, 
-                    <span class="text-war-amber font-semibold">rivalries</span>, and 
-                    <span class="text-war-text font-semibold">coordinated attacks</span>.
+            <div class="mb-12 reveal">
+                <div class="font-mono text-war-red text-sm tracking-widest mb-4">THE MODERATOR'S ARCHIVE</div>
+                <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">Cold Case Files</h2>
+                <p class="text-war-text-dim text-lg">To: New Recruits | Subject: ANOMALY DETECTION</p>
+            </div>
+            
+            <div class="briefing-card p-8 mb-12 reveal">
+                <p class="text-war-text-dim leading-relaxed">
+                    Listen up. If you think your job is just scrolling through cat videos and memes, you're looking at the surface, not the code. 
+                    The internet is a complex ecosystem, and sometimes, communities go dark.
                 </p>
-                <p class="text-lg md:text-xl leading-relaxed text-war-text-dim mt-4">
-                    We analyzed hyperlink data from 2014 to 2017 to write this manual. 
-                    It will be your survival guide.
+                <p class="text-war-text-dim leading-relaxed mt-4">
+                    We have built a model to patrol the data history. We aren't looking for noise: we are looking for <span class="text-war-red font-semibold">the silence</span>.
+                    Our algorithm scans for a specific pattern: <span class="text-war-text font-semibold">The Flatline</span>. One day, a subreddit is buzzing with activity, the next, it hits zero. Total blackout.
                 </p>
             </div>
             
-            <div class="mt-16 grid md:grid-cols-2 gap-6 stagger-children">
-                <div class="tactical-card p-6">
-                    <div class="font-mono text-xs text-war-red mb-2">01 // TOPOLOGY</div>
-                    <h3 class="font-tactical text-xl font-semibold mb-2">Know Your Enemy</h3>
-                    <p class="text-war-text-dim text-sm">Identify the bullies, the victims, and the war zones.</p>
+            <!-- Case File 01 -->
+            <div class="case-file p-6 mb-6 reveal">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="font-mono text-xs text-war-red">📂 CASE FILE 01</span>
+                    <span class="font-mono text-xs px-2 py-1 bg-war-red text-white">BANNED</span>
                 </div>
-                <div class="tactical-card p-6">
-                    <div class="font-mono text-xs text-war-red mb-2">02 // SEMANTICS</div>
-                    <h3 class="font-tactical text-xl font-semibold mb-2">The Semantic Radar</h3>
-                    <p class="text-war-text-dim text-sm">Understand why conflict erupts between neighbors.</p>
+                <h3 class="font-tactical text-2xl font-semibold mb-2">r/european</h3>
+                <p class="text-war-muted text-sm mb-4">Status: BANNED (March 2016)</p>
+                <div class="space-y-2 text-war-text-dim">
+                    <p><span class="text-war-amber font-semibold">The Disguise:</span> It looked like a standard news hub for European politics.</p>
+                    <p><span class="text-war-red font-semibold">The Reality:</span> A sanctuary for far-right white nationalism. Created specifically because r/europe started enforcing rules against hate speech.</p>
+                    <p><span class="text-war-text font-semibold">The Forensic Evidence:</span> An internal survey showed 17% of its users openly identified as Nazis.</p>
                 </div>
-                <div class="tactical-card p-6">
-                    <div class="font-mono text-xs text-war-red mb-2">03 // TEMPORAL</div>
-                    <h3 class="font-tactical text-xl font-semibold mb-2">The Alarm System</h3>
-                    <p class="text-war-text-dim text-sm">Detect cascade effects and aftershocks.</p>
+            </div>
+            
+            <!-- Case File 02 -->
+            <div class="case-file p-6 mb-6 reveal">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="font-mono text-xs text-war-red">📂 CASE FILE 02</span>
+                    <span class="font-mono text-xs px-2 py-1 bg-war-red text-white">BANNED</span>
                 </div>
-                <div class="tactical-card p-6">
-                    <div class="font-mono text-xs text-war-red mb-2">04 // LINGUISTIC</div>
-                    <h3 class="font-tactical text-xl font-semibold mb-2">The Language of War</h3>
-                    <p class="text-war-text-dim text-sm">Why filtering bad words doesn't work.</p>
+                <h3 class="font-tactical text-2xl font-semibold mb-2">r/leftwithsharpedge</h3>
+                <p class="text-war-muted text-sm mb-4">Status: BANNED (November 2016)</p>
+                <div class="space-y-2 text-war-text-dim">
+                    <p><span class="text-war-amber font-semibold">The Disguise:</span> An "edgy" alternative to the moderate r/leftwithoutedge.</p>
+                    <p><span class="text-war-red font-semibold">The Reality:</span> The "edge" was literal. A haven for radical anarchists who believed the only solution was violence.</p>
+                    <p><span class="text-war-text font-semibold">The Lesson:</span> Toxicity isn't partisan.</p>
                 </div>
+            </div>
+            
+            <!-- Case File 03 -->
+            <div class="case-file p-6 mb-6 reveal">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="font-mono text-xs text-war-red">📂 CASE FILE 03</span>
+                    <span class="font-mono text-xs px-2 py-1 bg-war-red text-white">BANNED</span>
+                </div>
+                <h3 class="font-tactical text-2xl font-semibold mb-2">r/publichealthwatch</h3>
+                <p class="text-war-muted text-sm mb-4">Status: BANNED (October 2016)</p>
+                <div class="space-y-2 text-war-text-dim">
+                    <p><span class="text-war-amber font-semibold">The Disguise:</span> A boring, bureaucratic name. Sounds like a government agency, right?</p>
+                    <p><span class="text-war-red font-semibold">The Reality:</span> The Master of Camouflage. A hate group targeting the LGBT community using pseudo-science.</p>
+                    <p><span class="text-war-text font-semibold">The Lesson:</span> This is the most dangerous type of content. It mimics authority to spread hate.</p>
+                </div>
+            </div>
+            
+            <div class="action-box p-6 mt-8 reveal">
+                <p class="text-war-green font-semibold mb-2">⚠️ CRITICAL LESSON</p>
+                <p class="text-war-text-dim">
+                    <strong class="text-war-text">Never trust the name of a subreddit.</strong> 
+                    r/publichealthwatch sounded safe. r/european sounded official. Your enemies know how to hide in the crowd. 
+                    They use sarcasm, "jokes", and boring titles to mask their intent.
+                </p>
             </div>
         </div>
     </section>
 
     <!-- ==================== PART 1: TOPOLOGICAL ANALYSIS ==================== -->
-    <section id="part1" class="py-24 px-6 relative border-t border-war-gray">
+    <section id="part1" class="py-24 px-6 relative border-t border-war-gray bg-war-dark">
         <div class="max-w-6xl mx-auto">
-            <!-- Part header -->
             <div class="mb-16 reveal">
                 <div class="font-mono text-war-red text-sm tracking-widest mb-4">PART 01</div>
                 <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">Know Your Enemy</h2>
                 <p class="text-war-text-dim text-lg max-w-2xl">Topological Analysis of the Reddit Conflict Network</p>
             </div>
             
-            <!-- Mod's Lesson Card -->
             <div class="briefing-card p-8 mb-16 glow-red reveal">
                 <div class="font-mono text-xs text-war-amber mb-3 tracking-wider">THE MOD'S LESSON</div>
                 <p class="font-tactical text-2xl md:text-3xl font-semibold text-war-text">
@@ -374,52 +336,44 @@
                 </p>
             </div>
             
-            <!-- Content sections -->
             <div class="space-y-24">
-                <!-- The False Friend Paradox -->
+                <!-- 1.1 False Friend Paradox -->
                 <div class="reveal">
                     <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
                         <span class="font-mono text-war-red text-sm">1.1</span>
-                        The False Friend Paradox
+                        The False Friend Paradox: Volume vs. Intent
                     </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        The first mistake a moderator makes is looking at the "Top Referrers" list and banning the subreddit that sends the most negative links. Let's look at the data.
+                    </p>
                     <p class="text-war-text-dim mb-8 max-w-3xl">
-                        The first mistake a moderator makes is looking at the "Top Referrers" list and banning 
-                        the subreddit that sends the most links. Volume does not equal danger.
+                        Look at <span class="text-war-amber">r/bestof</span> (second from the top). It sent 3,464 negative links. A rookie would blacklist them immediately. 
+                        But they also sent nearly 18,000 positive links. With a toxicity ratio of only 16.4%, r/bestof isn't an enemy—it's a bustling public square.
+                        Compare that to <span class="text-war-red">r/drama</span> (39.7% toxicity) or <span class="text-war-red">r/srssucks</span> (35.4%).
                     </p>
                     
-                    <!-- Placeholder for Toxicity vs Diplomacy chart -->
-                    <div class="flourish-container">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: TOXICITY VS DIPLOMACY</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
-                            <!-- Example embed code:
-                            <div class="flourish-embed flourish-chart" data-src="visualisation/YOUR_ID"></div>
-                            <script src="https://public.flourish.studio/resources/embed.js"></script>
-                            -->
-                        </div>
-                    </div>
+                    <div id="chart-most-wanted" class="chart-container mb-6"></div>
                     
-                    <div class="mt-6 p-4 bg-war-slate border-l-2 border-war-amber">
-                        <p class="font-mono text-sm text-war-amber">ACTIONABLE ADVICE:</p>
-                        <p class="text-war-text-dim mt-2">
-                            Don't ban by volume. Ban by Ratio. A subreddit linking to you 100 times with 90 smiles is a friend. 
-                            A subreddit linking to you 10 times with 10 knives is an assassin.
+                    <div class="action-box p-4">
+                        <p class="font-mono text-sm text-war-green mb-2">ACTIONABLE ADVICE:</p>
+                        <p class="text-war-text-dim">
+                            Don't ban by volume. <strong class="text-war-text">Ban by Ratio.</strong> 
+                            A subreddit linking to you 100 times with 90 smiles is a friend. A subreddit linking to you 10 times with 10 knives is an assassin.
                         </p>
                     </div>
                 </div>
                 
-                <!-- The Tactical Map -->
+                <!-- 1.2 Tactical Map -->
                 <div class="reveal">
                     <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
                         <span class="font-mono text-war-red text-sm">1.2</span>
                         The Tactical Map: Snipers vs. War Zones
                     </h3>
                     <p class="text-war-text-dim mb-8 max-w-3xl">
-                        We plotted every active subreddit based on attacks launched (X-axis) versus attacks received (Y-axis).
+                        We plotted every active subreddit based on attacks launched (X-axis) versus attacks received (Y-axis). 
                         This reveals the structural role they play in the conflict network.
                     </p>
                     
-                    <!-- Zone legend -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div class="p-4 bg-war-slate border border-war-gray text-center">
                             <div class="w-4 h-4 rounded-full bg-red-600 mx-auto mb-2"></div>
@@ -443,50 +397,80 @@
                         </div>
                     </div>
                     
-                    <!-- Placeholder for scatter plot -->
-                    <div class="flourish-container">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: TACTICAL MAP SCATTER PLOT</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
-                        </div>
+                    <div id="chart-tactical-map" class="chart-container mb-6"></div>
+                    
+                    <div class="action-box p-4">
+                        <p class="font-mono text-sm text-war-green mb-2">ACTIONABLE ADVICE:</p>
+                        <p class="text-war-text-dim">
+                            <strong class="text-war-text">Identify the Snipers.</strong> You cannot negotiate with a Sniper. They want a one-way raid, not a two-way war. 
+                            If you see traffic coming from the Sniper Zone, trigger your lockdown protocols immediately.
+                        </p>
                     </div>
                 </div>
                 
-                <!-- Modus Operandi -->
+                <!-- 1.3 Temporal Patterns -->
                 <div class="reveal">
                     <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
                         <span class="font-mono text-war-red text-sm">1.3</span>
-                        Modus Operandi: Serial Killers vs. Opportunists
+                        Modus Operandi: Temporal Patterns of Conflict
                     </h3>
                     <p class="text-war-text-dim mb-8 max-w-3xl">
-                        Knowing who the enemy is isn't enough. You need to know <em>when</em> they strike.
+                        Identifying the enemy is half the battle—you must understand their rhythm. 
+                        By visualizing attack patterns over a 3-year timeline, we uncovered distinct behavioral profiles.
                     </p>
                     
-                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
                         <div class="tactical-card p-6">
                             <div class="font-mono text-xs text-war-red mb-2">PROFILE A</div>
                             <h4 class="font-tactical text-xl font-semibold mb-2">Serial Killers</h4>
                             <p class="text-war-text-dim text-sm mb-4">
-                                Chronic toxicity. Constant baseline of aggression throughout the year.
+                                Solid, unbroken lines of red dots. They attack every single month without fail. Chronic conditions of the network.
                             </p>
-                            <div class="font-mono text-xs text-war-green">→ ACTION: Permanent Ban / Blacklist</div>
+                            <div class="font-mono text-xs text-war-green">→ ACTION: Permanent AutoMod filters</div>
                         </div>
                         <div class="tactical-card p-6">
                             <div class="font-mono text-xs text-war-amber mb-2">PROFILE B</div>
                             <h4 class="font-tactical text-xl font-semibold mb-2">Opportunists</h4>
                             <p class="text-war-text-dim text-sm mb-4">
-                                Usually dormant. Explode during specific events (elections, controversies).
+                                Timelines largely empty, punctured by massive exploding bubbles. "Sleeper Cells" that wake up for devastating raids.
                             </p>
-                            <div class="font-mono text-xs text-war-amber">→ ACTION: Temporary Lockdown Mode</div>
+                            <div class="font-mono text-xs text-war-amber">→ ACTION: Anomaly Detection System</div>
+                        </div>
+                        <div class="tactical-card p-6">
+                            <div class="font-mono text-xs text-purple-400 mb-2">PROFILE C</div>
+                            <h4 class="font-tactical text-xl font-semibold mb-2">Emerging Threats</h4>
+                            <p class="text-war-text-dim text-sm mb-4">
+                                Communities that appear from the void or awaken to suddenly adopt chronic negativity. "Radicalized Newcomers."
+                            </p>
+                            <div class="font-mono text-xs text-purple-400">→ ACTION: Monitor slope changes</div>
                         </div>
                     </div>
                     
-                    <!-- Placeholder for temporal chart -->
-                    <div class="flourish-container">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: CONFLICT SPECTRUM TIMELINE</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
-                        </div>
+                    <div id="chart-temporal-rainplot" class="chart-container mb-6"></div>
+                </div>
+                
+                <!-- 1.4 Evolution of Victims -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">1.4</span>
+                        The Moving Target: Evolution of Victims
+                    </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        Do not get comfortable. The target on your back moves. Our historical analysis shows that victims change based on internet culture trends.
+                    </p>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        <span class="text-war-amber">The Eternal Victim:</span> r/AskReddit retains the crown of Victim #1 throughout the entire dataset. 
+                        <span class="text-war-red">The Great Replacement (2016):</span> In 2014, victims were lighthearted hubs like r/adviceanimals. 
+                        By 2016, r/The_Donald appeared out of nowhere to become #2 most attacked.
+                    </p>
+                    
+                    <div id="chart-victim-evolution" class="chart-container mb-6"></div>
+                    
+                    <div class="action-box p-4">
+                        <p class="font-mono text-sm text-war-green mb-2">ACTIONABLE ADVICE:</p>
+                        <p class="text-war-text-dim">
+                            A victim's list from 2014 is useless in 2017. If you run a <strong class="text-war-text">Niche Sub</strong>, watch the news—you can go from "Invisible" to "Target #2" in less than 6 months.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -494,12 +478,12 @@
     </section>
 
     <!-- ==================== PART 2: SEMANTIC ANALYSIS ==================== -->
-    <section id="part2" class="py-24 px-6 relative border-t border-war-gray bg-war-dark">
+    <section id="part2" class="py-24 px-6 relative border-t border-war-gray">
         <div class="max-w-6xl mx-auto">
             <div class="mb-16 reveal">
                 <div class="font-mono text-war-red text-sm tracking-widest mb-4">PART 02</div>
                 <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">The Semantic Radar</h2>
-                <p class="text-war-text-dim text-lg max-w-2xl">Understanding Why Neighbors Fight</p>
+                <p class="text-war-text-dim text-lg max-w-2xl">Tribal Warfare Analysis</p>
             </div>
             
             <div class="briefing-card p-8 mb-16 glow-red reveal">
@@ -510,121 +494,143 @@
             </div>
             
             <div class="space-y-24">
-                <!-- Semantic Battlefield -->
+                <!-- 2.1 Law of Proximity -->
                 <div class="reveal">
                     <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
                         <span class="font-mono text-war-red text-sm">2.1</span>
-                        The Semantic Battlefield
+                        Neighborly Friction: The Law of Proximity
                     </h3>
-                    <p class="text-war-text-dim mb-8 max-w-3xl">
-                        Each subreddit lives somewhere in "topic-space" — a galaxy defined by language, culture, and community values.
-                        If two subreddits sit next to each other in this space, they're more likely to conflict.
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        A common rookie mistake is assuming that "hate is random"—that trolls just spray fire in every direction. 
+                        The data proves this wrong. We plotted Volume of Hostility against Semantic Distance (where 0 is your twin and 1 is an alien).
                     </p>
                     
-                    <!-- Placeholder for UMAP -->
-                    <div class="flourish-container mb-8">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: UMAP 2D SEMANTIC MAP</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="p-4 bg-war-slate border border-war-gray">
+                            <div class="font-mono text-xs text-gray-400 mb-2">DEAD ZONE (0.6–1.0)</div>
+                            <p class="text-war-text-dim text-sm">Almost zero "long-range artillery." A Knitting sub is semantically invisible to r/DayZ.</p>
+                        </div>
+                        <div class="p-4 bg-war-slate border border-war-gray">
+                            <div class="font-mono text-xs text-blue-400 mb-2">INNER CIRCLE (&lt;0.1)</div>
+                            <p class="text-war-text-dim text-sm">Low conflict. These subs are so similar they act as allies (e.g., r/Science vs r/Physics).</p>
+                        </div>
+                        <div class="p-4 bg-war-slate border border-war-red">
+                            <div class="font-mono text-xs text-war-red mb-2">RED ZONE (0.1–0.5)</div>
+                            <p class="text-war-text-dim text-sm"><strong class="text-war-text">This is where the bodies are buried.</strong> Similar enough to care, different enough to fight.</p>
                         </div>
                     </div>
                     
-                    <div class="war-quote text-xl text-war-text-dim italic">
-                        "If you want to survive a war, stop looking far away. 
-                        The arrow that kills you is always fired from the trench beside yours."
+                    <div id="chart-semantic-distance" class="chart-container mb-6"></div>
+                    
+                    <div class="war-quote text-xl text-war-text-dim mt-8">
+                        "Stop scanning the horizon for an invasion force. Conflict is driven by the Narcissism of Small Differences."
                     </div>
                 </div>
                 
-                <!-- Rivalry Index -->
+                <!-- 2.2 Tribes -->
                 <div class="reveal">
                     <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
                         <span class="font-mono text-war-red text-sm">2.2</span>
-                        The Rivalry Index
+                        Why "Tribes" and not "Topics"?
+                    </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        Rookie moderators categorize subreddits by "Topics" (Gaming, Sports, News). <strong class="text-war-text">This is a mistake.</strong> 
+                        In a war, labels don't matter—alliances do.
+                    </p>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        We didn't group subreddits based on what they <em>say</em> they are. We grouped them based on <strong class="text-war-amber">User Navigation Embeddings</strong>—
+                        tracking millions of users moving from one subreddit to another. If two subs are close in this space, the <em>same people</em> live there.
+                        We identified <strong class="text-war-red">19 Dominant Tribes</strong>.
+                    </p>
+                </div>
+                
+                <!-- 2.3 Tribal Warfare Matrix -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">2.3</span>
+                        The Tribal Warfare Matrix
                     </h3>
                     <p class="text-war-text-dim mb-8 max-w-3xl">
-                        Structural rivalries between communities that are very close in meaning 
-                        but disproportionately hostile toward each other.
+                        We present two views: <strong class="text-war-text">The Obsession Map</strong> (pure fixation, ignoring size) and 
+                        <strong class="text-war-text">The Warfare Matrix</strong> (adding volume). By comparing them, "War Crimes" become visible.
                     </p>
                     
-                    <!-- Example rivalries -->
-                    <div class="grid md:grid-cols-3 gap-4 mb-8">
-                        <div class="p-4 bg-war-slate border border-war-gray text-center">
-                            <div class="font-mono text-sm text-war-red">r/Programming</div>
-                            <div class="text-war-muted my-2">⚔️</div>
-                            <div class="font-mono text-sm text-war-red">r/ProgrammerHumor</div>
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="tactical-card p-6">
+                            <div class="font-mono text-xs text-war-red mb-2">CIVIL WARS</div>
+                            <p class="text-war-text-dim text-sm">
+                                <strong class="text-war-text">We fight our own.</strong> Look at American Sports—the diagonal is deep red. Sports fans fight other Sports fans, not Gamers.
+                            </p>
                         </div>
-                        <div class="p-4 bg-war-slate border border-war-gray text-center">
-                            <div class="font-mono text-sm text-war-red">r/WallStreetBets</div>
-                            <div class="text-war-muted my-2">⚔️</div>
-                            <div class="font-mono text-sm text-war-red">r/investing</div>
+                        <div class="tactical-card p-6">
+                            <div class="font-mono text-xs text-war-amber mb-2">PARIAH TRIBES</div>
+                            <p class="text-war-text-dim text-sm">
+                                Some tribes are "Universal Enemies." Look at General Discussion—a vertical stripe. <em>Everyone</em> attacks them.
+                            </p>
                         </div>
-                        <div class="p-4 bg-war-slate border border-war-gray text-center">
-                            <div class="font-mono text-sm text-war-red">r/PS5</div>
-                            <div class="text-war-muted my-2">⚔️</div>
-                            <div class="font-mono text-sm text-war-red">r/Xbox</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Placeholder for heatmap -->
-                    <div class="flourish-container">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: RIVALRY HEATMAP</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
+                        <div class="tactical-card p-6">
+                            <div class="font-mono text-xs text-purple-400 mb-2">BLOOD FEUDS</div>
+                            <p class="text-war-text-dim text-sm">
+                                Small dark-red squares off the diagonal reveal targeted vendettas. These tribes are fixated on destroying a specific neighbor.
+                            </p>
                         </div>
                     </div>
                     
-                    <div class="mt-8 war-quote text-xl text-war-text-dim italic">
-                        "Your worst enemies are the ones who look like you — 
-                        just enough to compete for identity or territory."
+                    <div id="chart-tribal-warfare" class="chart-container mb-6"></div>
+                </div>
+                
+                <!-- 2.4 Strategic Radar -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">2.4</span>
+                        The Strategic Radar — Your Early Warning System
+                    </h3>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        Select your Tribe from the dropdown. The radar generates a unique <strong class="text-war-text">Threat Signature</strong> based on two defensive layers:
+                        <span class="text-purple-400">Purple Zone (Incoming Attacks)</span> shows who is besieging you, and
+                        <span class="text-war-red">Red Zone (Outgoing Aggression)</span> shows who your users are raiding.
+                    </p>
+                    
+                    <div id="chart-tribe-radar" class="chart-container mb-6"></div>
+                </div>
+                
+                <!-- 2.5 Ballistics Report -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">2.5</span>
+                        The Aggression Autopsy: Community Conflict Profiling
+                    </h3>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        Once the alarm goes off, you need a <strong class="text-war-text">Microscope</strong>. 
+                        This tool visualizes the flow of hate through a specific community—the Purple supply lines (invaders) and Red retaliation (your liability).
+                    </p>
+                    
+                    <div id="chart-ballistics" class="chart-container mb-6"></div>
+                    
+                    <div class="grid md:grid-cols-3 gap-6 mt-8">
+                        <div class="p-4 bg-war-slate border border-blue-500">
+                            <div class="font-mono text-xs text-blue-400 mb-2">THE BESIEGED FORTRESS</div>
+                            <p class="text-war-text-dim text-sm"><strong>r/nfl:</strong> 315 incoming, 36 outgoing. Under siege from its own tribe (American Sports).</p>
+                        </div>
+                        <div class="p-4 bg-war-slate border border-war-red">
+                            <div class="font-mono text-xs text-war-red mb-2">THE EXPORT HUB</div>
+                            <p class="text-war-text-dim text-sm"><strong>r/drama:</strong> 252 incoming, 2,658 outgoing. A raid staging ground. If your Sankey looks like this, you are the villain.</p>
+                        </div>
+                        <div class="p-4 bg-war-slate border border-purple-500">
+                            <div class="font-mono text-xs text-purple-400 mb-2">THE THUNDERDOME</div>
+                            <p class="text-war-text-dim text-sm"><strong>r/the_donald:</strong> Chaotic two-way warfare. Everyone is fighting everyone.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ==================== PART 3: TEMPORAL DYNAMICS ==================== -->
-    <section id="part3" class="py-24 px-6 relative border-t border-war-gray">
+    <!-- ==================== PART 3: LINGUISTIC ANALYSIS ==================== -->
+    <section id="part3" class="py-24 px-6 relative border-t border-war-gray bg-war-dark">
         <div class="max-w-6xl mx-auto">
             <div class="mb-16 reveal">
                 <div class="font-mono text-war-red text-sm tracking-widest mb-4">PART 03</div>
-                <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">The Alarm System</h2>
-                <p class="text-war-text-dim text-lg max-w-2xl">Temporal Dynamics and Cascade Effects</p>
-            </div>
-            
-            <div class="briefing-card p-8 mb-16 glow-red reveal">
-                <div class="font-mono text-xs text-war-amber mb-3 tracking-wider">THE MOD'S LESSON</div>
-                <p class="font-tactical text-2xl md:text-3xl font-semibold text-war-text">
-                    "Rule #3: Violence echoes. <span class="text-war-red">If you get hit, prepare for the aftershock.</span>"
-                </p>
-            </div>
-            
-            <div class="space-y-24">
-                <div class="reveal">
-                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
-                        <span class="font-mono text-war-red text-sm">3.1</span>
-                        Cascade Power
-                    </h3>
-                    <p class="text-war-text-dim mb-8 max-w-3xl">
-                        Measuring how attacks propagate through the network over time.
-                    </p>
-                    
-                    <!-- Placeholder for cascade visualization -->
-                    <div class="flourish-container">
-                        <div class="text-center text-war-muted py-20">
-                            <div class="font-mono text-xs mb-2">CHART: CASCADE EFFECT VISUALIZATION</div>
-                            <p class="text-sm">[ Flourish embed goes here ]</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== PART 4: LINGUISTIC ANALYSIS ==================== -->
-    <section id="part4" class="py-24 px-6 relative border-t border-war-gray bg-war-dark">
-        <div class="max-w-6xl mx-auto">
-            <div class="mb-16 reveal">
-                <div class="font-mono text-war-red text-sm tracking-widest mb-4">PART 04</div>
                 <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">The Language of War</h2>
                 <p class="text-war-text-dim text-lg max-w-2xl">Why Filtering Bad Words Doesn't Work</p>
             </div>
@@ -632,69 +638,173 @@
             <div class="briefing-card p-8 mb-16 glow-red reveal">
                 <div class="font-mono text-xs text-war-amber mb-3 tracking-wider">THE MOD'S LESSON</div>
                 <p class="font-tactical text-2xl md:text-3xl font-semibold text-war-text">
-                    "Rule #4: In war, truth is the first casualty... <span class="text-war-red">and grammar is the second.</span>"
+                    "Rule #3: In war, truth is the first casualty... <span class="text-war-red">and grammar is the second.</span>"
                 </p>
             </div>
             
             <div class="space-y-24">
-                <!-- Interactive Question -->
+                <!-- 3.1 The ML Model -->
                 <div class="reveal">
-                    <div class="text-center mb-12">
-                        <p class="text-xl text-war-text mb-8">
-                            Do you think filtering bad words would be a good idea to avoid hate speech?
-                        </p>
-                        <div class="flex justify-center gap-4">
-                            <button id="btn-yes" class="px-8 py-3 bg-war-green text-war-black font-tactical font-semibold text-lg hover:bg-green-500 transition-colors">
-                                YES
-                            </button>
-                            <button id="btn-no" class="px-8 py-3 bg-war-red text-white font-tactical font-semibold text-lg hover:bg-red-500 transition-colors">
-                                NO
-                            </button>
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">3.1</span>
+                        The Detection Model
+                    </h3>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        In this dataset, hyperlinks are already labeled as positive or negative. However, this is a luxury you will not have in real operations.
+                        We trained a Random Forest classifier to assist future moderators in detecting negative content automatically.
+                        This model does not replace human moderation—it gives you better intelligence before you engage.
+                    </p>
+                </div>
+                
+                <!-- 3.2 Sarcasm -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">3.2</span>
+                        Human Intuition vs. Machine Blindness
+                    </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        <strong class="text-war-text">The Ground Truth:</strong> Our dataset labels are crowdsourced—verified by humans who detect sarcasm in phrases like "Good job breaking everything."
+                    </p>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        <strong class="text-war-amber">The Tool (VADER):</strong> A rule-based model using a dictionary of words. X-Axis = Algorithm's verdict, Y-Axis = Density of "nice" words.
+                    </p>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        <strong class="text-war-red">The Trap:</strong> The red dots on the far right are False Positives—attacks that humans flagged as toxic, but VADER rated as positive because attackers used "high-intensity positive words" sarcastically.
+                    </p>
+                    
+                    <div id="chart-sarcasm" class="chart-container mb-6"></div>
+                </div>
+                
+                <!-- 3.3 The Numbers -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">3.3</span>
+                        Quantifying the Threat
+                    </h3>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        We analyzed 82,210 negative hyperlinks (confirmed attacks). Here's how the algorithm categorized them:
+                    </p>
+                    
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="p-6 bg-war-slate border border-war-green text-center">
+                            <div class="font-tactical text-4xl font-bold text-war-green mb-2">69.55%</div>
+                            <div class="font-mono text-xs text-war-green mb-2">HONEST ATTACKS</div>
+                            <p class="text-war-text-dim text-sm">57,179 links. Explicitly negative language. Standard AutoMod filters work.</p>
+                        </div>
+                        <div class="p-6 bg-war-slate border border-war-red text-center">
+                            <div class="font-tactical text-4xl font-bold text-war-red mb-2">12.73%</div>
+                            <div class="font-mono text-xs text-war-red mb-2">SARCASTIC CAMOUFLAGE</div>
+                            <p class="text-war-text-dim text-sm">10,463 links. Positive language masking hostility. AI-only systems fail here.</p>
+                        </div>
+                        <div class="p-6 bg-war-slate border border-gray-500 text-center">
+                            <div class="font-tactical text-4xl font-bold text-gray-400 mb-2">17.72%</div>
+                            <div class="font-mono text-xs text-gray-400 mb-2">GREY ZONE</div>
+                            <p class="text-war-text-dim text-sm">14,568 links. Ambiguous cases requiring human judgment.</p>
                         </div>
                     </div>
                     
-                    <div id="answer-reveal" class="hidden">
-                        <div class="p-6 bg-war-slate border border-war-red mb-8">
-                            <p class="text-war-text-dim">
-                                <span class="text-war-red font-semibold">It's not that easy.</span> 
-                                Sarcasm is key in gaslighting and verbal attacks. The most toxic messages 
-                                often use "positive" words sarcastically.
-                            </p>
-                        </div>
-                        
-                        <!-- Placeholder for word clouds -->
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div class="flourish-container">
-                                <div class="text-center text-war-muted py-16">
-                                    <div class="font-mono text-xs mb-2 text-war-green">POSITIVE DISCOURSE</div>
-                                    <p class="text-sm">[ Word cloud embed ]</p>
-                                </div>
-                            </div>
-                            <div class="flourish-container">
-                                <div class="text-center text-war-muted py-16">
-                                    <div class="font-mono text-xs mb-2 text-war-red">NEGATIVE DISCOURSE (SARCASM)</div>
-                                    <p class="text-sm">[ Word cloud embed ]</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <p class="text-war-text-dim mt-8 text-center max-w-2xl mx-auto">
-                            Notice how both word clouds contain almost identical "positive" words. 
-                            Filtering "bad words" clearly isn't a solution when hostility is wrapped in sarcasm.
+                    <div class="action-box p-6">
+                        <p class="font-mono text-sm text-war-green mb-2">THE MODERATOR'S TAKEAWAY:</p>
+                        <p class="text-war-text-dim">
+                            If you rely solely on AI bots, you are mechanically missing <strong class="text-war-text">~30% of threats</strong> (Sarcasm + Grey Zone). 
+                            Automation handles the ~70% of "Honest Attacks," but human moderators are mandatory to intercept the sophisticated 12.7% who know how to game the system.
                         </p>
                     </div>
+                </div>
+                
+                <!-- 3.4 High-Risk Subreddits -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">3.4</span>
+                        Identifying High-Risk Environments
+                    </h3>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        While the global baseline sits at 12%, specific communities significantly exceed this average. 
+                        Sarcasm usage is highly dependent on the specific culture of each subreddit.
+                    </p>
+                    
+                    <div id="chart-top-sarcastic" class="chart-container mb-6"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PART 4: WHEN & WHERE ==================== -->
+    <section id="part4" class="py-24 px-6 relative border-t border-war-gray">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-16 reveal">
+                <div class="font-mono text-war-red text-sm tracking-widest mb-4">PART 04</div>
+                <h2 class="font-tactical text-4xl md:text-5xl font-bold mb-6">When & Where?</h2>
+                <p class="text-war-text-dim text-lg max-w-2xl">Workload Distribution & Critical Windows</p>
+            </div>
+            
+            <div class="space-y-24">
+                <!-- 4.1 Temporal Heatmap -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">4.1</span>
+                        Your Operational Calendar
+                    </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        We analyzed the timestamps of all confirmed attacks. The data reveals a crucial insight: <strong class="text-war-text">toxicity is a constant variable</strong>. 
+                        There is no "day off" on the internet.
+                    </p>
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        <span class="text-war-red">The Thursday Peak:</span> Statistically the most intense day for hostile interactions. Your "High Alert" window.
+                        <span class="text-war-amber">The Weekend Dip:</span> Slight decrease, but don't mistake this for a ceasefire. Lower frequency ≠ lower severity.
+                    </p>
+                    
+                    <div id="chart-temporal-heatmap" class="chart-container mb-6"></div>
+                    
+                    <div class="action-box p-4">
+                        <p class="font-mono text-sm text-war-green mb-2">RESOURCE ALLOCATION:</p>
+                        <p class="text-war-text-dim">
+                            <strong class="text-war-text">Thursday:</strong> Maximum coverage. No maintenance or non-essential tasks.
+                            <strong class="text-war-text">Weekend:</strong> Reaction time drops because fewer mods are online. Don't lower your guard.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- 4.2 Body vs Title -->
+                <div class="reveal">
+                    <h3 class="font-tactical text-2xl font-semibold mb-4 flex items-center gap-3">
+                        <span class="font-mono text-war-red text-sm">4.2</span>
+                        The Billboard vs. The Bunker
+                    </h3>
+                    <p class="text-war-text-dim mb-4 max-w-3xl">
+                        Where do most cross-links emerge from—the body or the title? The distinction is not just technical, it is tactical.
+                    </p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                        <div class="p-6 bg-war-slate border border-war-gray">
+                            <div class="font-mono text-xs text-gray-400 mb-2">THE BUNKER (Body)</div>
+                            <p class="text-war-text-dim text-sm">Toxicity inside a post is "contained." Only users who click and read are exposed. Requires active engagement.</p>
+                        </div>
+                        <div class="p-6 bg-war-slate border border-war-red">
+                            <div class="font-mono text-xs text-war-red mb-2">THE BILLBOARD (Title)</div>
+                            <p class="text-war-text-dim text-sm">A toxic title is visible to everyone scrolling. It's a broadcast weapon—a recruitment poster for brigading.</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-war-text-dim mb-8 max-w-3xl">
+                        Unfortunately, your adversaries aren't just toxic—they are tactical. 
+                        <strong class="text-war-red">Nearly 75% of all negative hyperlinks are located in Titles.</strong>
+                        They aren't hiding in the Bunker; they are weaponizing the Billboard.
+                    </p>
+                    
+                    <div id="chart-attack-origin" class="chart-container mb-6"></div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ==================== FOOTER ==================== -->
-    <footer class="py-16 px-6 border-t border-war-gray">
+    <footer class="py-16 px-6 border-t border-war-gray bg-war-dark">
         <div class="max-w-4xl mx-auto text-center">
             <div class="font-mono text-xs text-war-muted mb-4 tracking-widest">END OF TRANSMISSION</div>
             <p class="font-tactical text-2xl text-war-text mb-8">Stay vigilant. Stay informed. Survive.</p>
             <div class="text-war-text-dim text-sm">
-                <p>Applied Data Analysis Course // EPFL 2025</p>
+                <p>Applied Data Analysis Course // EPFL 2024</p>
                 <p class="mt-2">Data source: Reddit Hyperlink Network (2014-2017)</p>
             </div>
         </div>
@@ -702,6 +812,82 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
+        // Dark theme for Plotly charts
+        const darkTheme = {
+            paper_bgcolor: '#12131a',
+            plot_bgcolor: '#12131a',
+            font: { color: '#e5e7eb', family: 'Space Grotesk, sans-serif' },
+            xaxis: { 
+                gridcolor: '#2a2d3a', 
+                linecolor: '#2a2d3a',
+                zerolinecolor: '#2a2d3a'
+            },
+            yaxis: { 
+                gridcolor: '#2a2d3a', 
+                linecolor: '#2a2d3a',
+                zerolinecolor: '#2a2d3a'
+            },
+            colorway: ['#dc2626', '#d97706', '#16a34a', '#3b82f6', '#8b5cf6', '#ec4899']
+        };
+
+        // Apply dark theme to chart
+        function applyDarkTheme(data) {
+            if (data.layout) {
+                Object.assign(data.layout, darkTheme);
+                if (data.layout.xaxis) Object.assign(data.layout.xaxis, darkTheme.xaxis);
+                if (data.layout.yaxis) Object.assign(data.layout.yaxis, darkTheme.yaxis);
+                // Handle subplots
+                for (let key in data.layout) {
+                    if (key.startsWith('xaxis') || key.startsWith('yaxis')) {
+                        if (key !== 'xaxis' && key !== 'yaxis') {
+                            Object.assign(data.layout[key], key.startsWith('x') ? darkTheme.xaxis : darkTheme.yaxis);
+                        }
+                    }
+                }
+            }
+            return data;
+        }
+
+        // Load chart
+        function loadChart(elementId, jsonFile) {
+            fetch(`graphs/${jsonFile}`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    data = applyDarkTheme(data);
+                    Plotly.newPlot(elementId, data.data, data.layout, {responsive: true});
+                })
+                .catch(error => {
+                    console.error(`Error loading ${jsonFile}:`, error);
+                    document.getElementById(elementId).innerHTML = `
+                        <div class="flex items-center justify-center h-full text-war-muted">
+                            <div class="text-center">
+                                <p class="font-mono text-sm">Chart: ${jsonFile}</p>
+                                <p class="text-xs mt-2">Place JSON files in /graphs folder</p>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        // Load all charts
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChart('chart-most-wanted', 'most_wanted.json');
+            loadChart('chart-tactical-map', 'tactical_map.json');
+            loadChart('chart-temporal-rainplot', 'temporal_rainplot.json');
+            loadChart('chart-victim-evolution', 'victim_evolution.json');
+            loadChart('chart-semantic-distance', 'semantic_distance.json');
+            loadChart('chart-tribal-warfare', 'tribal_warfare_matrix.json');
+            loadChart('chart-tribe-radar', 'tribe_radar.json');
+            loadChart('chart-ballistics', 'ballistics_report.json');
+            loadChart('chart-sarcasm', 'sarcasm_plot.json');
+            loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
+            loadChart('chart-temporal-heatmap', 'temporal_heatmap.json');
+            loadChart('chart-attack-origin', 'attack_origin.json');
+        });
+
         // Progress bar
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
@@ -709,7 +895,7 @@
             const scrolled = (winScroll / height) * 100;
             document.getElementById('progress-bar').style.width = scrolled + '%';
             
-            // Hide scroll indicator after scrolling
+            // Hide scroll indicator
             const scrollIndicator = document.getElementById('scroll-indicator');
             if (scrollIndicator) {
                 scrollIndicator.style.opacity = winScroll > 100 ? '0' : '1';
@@ -718,24 +904,20 @@
         });
 
         // Scroll reveal
-        const revealElements = document.querySelectorAll('.reveal, .reveal-left, .stagger-children');
-        
+        const revealElements = document.querySelectorAll('.reveal');
         const revealOnScroll = () => {
             revealElements.forEach(el => {
                 const windowHeight = window.innerHeight;
                 const elementTop = el.getBoundingClientRect().top;
-                const revealPoint = 150;
-                
-                if (elementTop < windowHeight - revealPoint) {
+                if (elementTop < windowHeight - 150) {
                     el.classList.add('active');
                 }
             });
         };
-        
         window.addEventListener('scroll', revealOnScroll);
         window.addEventListener('load', revealOnScroll);
 
-        // Navigation dots active state
+        // Navigation dots
         const sections = document.querySelectorAll('section[id], header[id]');
         const navDots = document.querySelectorAll('.nav-dot');
         
@@ -743,12 +925,10 @@
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
                 if (scrollY >= sectionTop - 300) {
                     current = section.getAttribute('id');
                 }
             });
-            
             navDots.forEach(dot => {
                 dot.classList.remove('active');
                 if (dot.getAttribute('href') === '#' + current) {
@@ -757,20 +937,7 @@
             });
         });
 
-        // Yes/No button interaction
-        const btnYes = document.getElementById('btn-yes');
-        const btnNo = document.getElementById('btn-no');
-        const answerReveal = document.getElementById('answer-reveal');
-        
-        const revealAnswer = () => {
-            answerReveal.classList.remove('hidden');
-            answerReveal.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-        
-        btnYes.addEventListener('click', revealAnswer);
-        btnNo.addEventListener('click', revealAnswer);
-
-        // Smooth scroll for nav dots
+        // Smooth scroll
         navDots.forEach(dot => {
             dot.addEventListener('click', (e) => {
                 e.preventDefault();
