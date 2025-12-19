@@ -15,7 +15,19 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from plotly.subplots import make_subplots
 
-
+def apply_dark_theme(fig):
+    """Apply war theme styling to any Plotly figure"""
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(18,19,26,1)',
+        font=dict(color='#e5e7eb', family='Space Grotesk, sans-serif'),
+        title_font=dict(color='#e5e7eb'),
+        legend=dict(bgcolor='rgba(0,0,0,0)', font=dict(color='#9ca3af')),
+    )
+    # Update axes if they exist
+    fig.update_xaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
+    fig.update_yaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
+    return fig
 
 
 
@@ -1713,14 +1725,10 @@ def plot_spike_cascades(
     spikes_in = daily_in[daily_in["is_spike_in"]].copy()
     spikes_out = daily_out[daily_out["is_spike_out"]].copy()
 
-    print(f"Detected {len(spikes_in)} Incoming Spikes and {len(spikes_out)} Outgoing Spikes.")
-
     # --- 4. DETECT CASCADES ---
     cascades = []
 
     out_lookup = spikes_out.groupby(source_col)
-
-    print("Matching spikes to find Cascades (Non-Retaliation constraint)...")
 
     for _, row_in in spikes_in.iterrows():
         sub = row_in[target_col]
@@ -1765,7 +1773,6 @@ def plot_spike_cascades(
                     })
 
     cascade_df = pd.DataFrame(cascades)
-    print(f"Found {len(cascade_df)} Valid Cascades (Contagion Events).")
 
     # --- 5. VISUALIZATION ---
     if not cascade_df.empty:
