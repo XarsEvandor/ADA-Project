@@ -1654,3 +1654,551 @@ def plot_attack_origin_comparison(title_df, body_df):
     )
 
     fig.show()
+
+
+def plot_spike_cascades(
+    df,
+    source_col="SOURCE_SUBREDDIT",
+    target_col="TARGET_SUBREDDIT",
+    sentiment_col="LINK_SENTIMENT",
+    time_col="TIMESTAMP",
+    negative_value=-1,
+    sigma=2,
+    delta_days=30
+):
+    # --- 1. FILTER NEGATIVE LINKS ---
+    attacks = df[df[sentiment_col] == negative_value].copy()
+    attacks["date"] = pd.to_datetime(attacks[time_col])
+    attacks["day"] = attacks["date"].dt.date
+
+    # Count INCOMING attacks per day
+    daily_in = (
+        attacks.groupby([target_col, "day"])
+        .size()
+        .reset_index(name="n_in")
+    )
+
+    # Count OUTGOING attacks per day
+    daily_out = (
+        attacks.groupby([source_col, "day"])
+        .size()
+        .reset_index(name="n_out")
+    )
+
+    # --- 2. CALCULATE BASELINES ---
+    def get_stats(df_, col_sub, col_val):
+        stats = df_.groupby(col_sub)[col_val].agg(["mean", "std"]).fillna(0)
+        stats["threshold"] = stats["mean"] + sigma * stats["std"]
+        return stats
+
+    stats_in = get_stats(daily_in, target_col, "n_in")
+    stats_out = get_stats(daily_out, source_col, "n_out")
+
+    daily_in = daily_in.merge(
+        stats_in[["threshold"]],
+        left_on=target_col,
+        right_index=True
+    )
+
+    daily_out = daily_out.merge(
+        stats_out[["threshold"]],
+        left_on=source_col,
+        right_index=True
+    )
+
+    # --- 3. DETECT SPIKES ---
+    daily_in["is_spike_in"] = daily_in["n_in"] > daily_in["threshold"]
+    daily_out["is_spike_out"] = daily_out["n_out"] > daily_out["threshold"]
+
+    spikes_in = daily_in[daily_in["is_spike_in"]].copy()
+    spikes_out = daily_out[daily_out["is_spike_out"]].copy()
+
+    print(f"Detected {len(spikes_in)} Incoming Spikes and {len(spikes_out)} Outgoing Spikes.")
+
+    # --- 4. DETECT CASCADES ---
+    cascades = []
+
+    out_lookup = spikes_out.groupby(source_col)
+
+    print("Matching spikes to find Cascades (Non-Retaliation constraint)...")
+
+    for _, row_in in spikes_in.iterrows():
+        sub = row_in[target_col]
+        date_in = row_in["day"]
+
+        if sub in out_lookup.groups:
+            potential_reactions = out_lookup.get_group(sub)
+
+            reaction_window = [
+                date_in + pd.Timedelta(days=i)
+                for i in range(1, delta_days + 1)
+            ]
+
+            matches = potential_reactions[
+                potential_reactions["day"].isin(reaction_window)
+            ]
+
+            for _, row_out in matches.iterrows():
+                sources_of_incoming = attacks[
+                    (attacks[target_col] == sub) &
+                    (attacks["day"] == date_in)
+                ][source_col].unique()
+
+                targets_of_outgoing = attacks[
+                    (attacks[source_col] == sub) &
+                    (attacks["day"] == row_out["day"])
+                ][target_col].unique()
+
+                new_targets = np.setdiff1d(
+                    targets_of_outgoing,
+                    sources_of_incoming
+                )
+
+                if len(new_targets) > 0:
+                    cascades.append({
+                        "SUBREDDIT": sub,
+                        "date_trigger": date_in,
+                        "date_reaction": row_out["day"],
+                        "incoming_vol": row_in["n_in"],
+                        "outgoing_vol": row_out["n_out"],
+                        "new_victims": list(new_targets)
+                    })
+
+    cascade_df = pd.DataFrame(cascades)
+    print(f"Found {len(cascade_df)} Valid Cascades (Contagion Events).")
+
+    # --- 5. VISUALIZATION ---
+    if not cascade_df.empty:
+        top_contagious = (
+            cascade_df["SUBREDDIT"]
+            .value_counts()
+            .head(10)
+            .reset_index()
+        )
+        top_contagious.columns = ["SUBREDDIT", "cascade_count"]
+
+        fig = px.bar(
+            top_contagious,
+            x="cascade_count",
+            y="SUBREDDIT",
+            orientation="h",
+            title="<b>The Spreaders</b>: SUBREDDITs most likely to lash out after being hit",
+            color="cascade_count",
+            template="plotly_dark"
+        )
+        fig.update_layout(
+            yaxis={"categoryorder": "total ascending"}
+        )
+        fig.show()
+
+        display(cascade_df.head())
+    else:
+        print("No cascades found with current thresholds. Try lowering sigma.")
+
+def plot_in_out_over_time(
+    df,
+    subreddit_name,
+    source_col="SOURCE_SUBREDDIT",
+    target_col="TARGET_SUBREDDIT",
+    sentiment_col="LINK_SENTIMENT",
+    time_col="TIMESTAMP",
+    negative_value=-1,
+    freq="D",          # "D"=daily, "W"=weekly, "M"=monthly
+    smooth=None        # None or int window for rolling mean (e.g., 7 for 7-day)
+):
+    """
+    Plots incoming vs outgoing NEGATIVE links over time for a given subreddit.
+    Does not return anything (just shows the plot).
+    """
+
+    # Filter negative links only
+    attacks = df[df[sentiment_col] == negative_value].copy()
+    attacks[time_col] = pd.to_datetime(attacks[time_col], errors="coerce")
+    attacks = attacks.dropna(subset=[time_col])
+
+    # Bucket time
+    attacks["t"] = attacks[time_col].dt.to_period(freq).dt.to_timestamp()
+
+    # Incoming (target perspective)
+    incoming_ts = (
+        attacks[attacks[target_col] == subreddit_name]
+        .groupby("t")
+        .size()
+        .rename("incoming")
+    )
+
+    # Outgoing (source perspective)
+    outgoing_ts = (
+        attacks[attacks[source_col] == subreddit_name]
+        .groupby("t")
+        .size()
+        .rename("outgoing")
+    )
+
+    # Align on same time index (fill missing with 0)
+    ts = pd.concat([incoming_ts, outgoing_ts], axis=1).fillna(0).sort_index()
+
+    # Optional smoothing (rolling mean)
+    if smooth is not None and smooth > 1:
+        ts_plot = ts.rolling(window=smooth, min_periods=1).mean()
+        title_suffix = f" (rolling mean, window={smooth})"
+    else:
+        ts_plot = ts
+        title_suffix = ""
+
+    # Plot
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=ts_plot.index, y=ts_plot["incoming"],
+        mode="lines",
+        name="Incoming (targeted)"
+    ))
+    fig.add_trace(go.Scatter(
+        x=ts_plot.index, y=ts_plot["outgoing"],
+        mode="lines",
+        name="Outgoing (attacks)"
+    ))
+
+    fig.update_layout(
+        title=f"Incoming vs Outgoing Negative Links Over Time — r/{subreddit_name}{title_suffix}",
+        xaxis_title="Time",
+        yaxis_title=f"Count per {freq}",
+        template="plotly_dark"
+    )
+
+    fig.show()
+
+def plot_outgoing_pos_neg_over_time(
+    df,
+    subreddit_name,
+    source_col="SOURCE_SUBREDDIT",
+    sentiment_col="LINK_SENTIMENT",
+    time_col="TIMESTAMP",
+    positive_value=1,
+    negative_value=-1,
+    freq="D",      # "D" daily, "W" weekly, "M" monthly
+    smooth=None    # e.g. 7 for 7-day rolling mean
+):
+    """
+    Plots outgoing POSITIVE vs NEGATIVE links over time for a given subreddit.
+    Shows one curve for positives, one for negatives.
+    Does not return anything.
+    """
+
+    # Filter to outgoing links of the subreddit
+    df_sub = df[df[source_col] == subreddit_name].copy()
+    df_sub[time_col] = pd.to_datetime(df_sub[time_col], errors="coerce")
+    df_sub = df_sub.dropna(subset=[time_col])
+
+    # Time binning
+    df_sub["t"] = df_sub[time_col].dt.to_period(freq).dt.to_timestamp()
+
+    # Count outgoing NEGATIVE links
+    neg_ts = (
+        df_sub[df_sub[sentiment_col] == negative_value]
+        .groupby("t")
+        .size()
+        .rename("negative")
+    )
+
+    # Count outgoing POSITIVE links
+    pos_ts = (
+        df_sub[df_sub[sentiment_col] == positive_value]
+        .groupby("t")
+        .size()
+        .rename("positive")
+    )
+
+    # Align time index
+    ts = pd.concat([neg_ts, pos_ts], axis=1).fillna(0).sort_index()
+
+    # Optional smoothing
+    if smooth is not None and smooth > 1:
+        ts_plot = ts.rolling(window=smooth, min_periods=1).mean()
+        title_suffix = f" (rolling mean, window={smooth})"
+    else:
+        ts_plot = ts
+        title_suffix = ""
+
+    # Plot
+    fig = go.Figure()
+
+
+    fig.add_trace(go.Scatter(
+        x=ts_plot.index,
+        y=ts_plot["positive"],
+        mode="lines",
+        name="Outgoing positive links"
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=ts_plot.index,
+        y=ts_plot["negative"],
+        mode="lines",
+        name="Outgoing negative links"
+    ))
+
+
+    fig.update_layout(
+        title=f"Outgoing Positive vs Negative Links Over Time — r/{subreddit_name}{title_suffix}",
+        xaxis_title="Time",
+        yaxis_title=f"Count per {freq}",
+        template="plotly_dark"
+    )
+
+    fig.show()
+
+def plot_subreddit_connections_2d_overtime(
+    df,
+    subreddit_name,
+    source_col="SOURCE_SUBREDDIT",
+    target_col="TARGET_SUBREDDIT",
+    sx="source_x",
+    sy="source_y",
+    tx="target_x",
+    ty="target_y",
+    time_col="TIMESTAMP",
+    freq="W",                # "D", "W", "M"
+    sentiment_col="LINK_SENTIMENT",      # e.g. "LINK_SENTIMENT"
+    sentiment_value=None,    # e.g. -1 or +1
+    max_edges_per_frame=300,
+    show_labels=False,
+    template="plotly_dark"
+):
+    """
+    Animated 2D map of connections involving `subreddit_name`, over time (slider).
+    Does not return anything.
+    """
+
+    d = df.copy()
+    d[time_col] = pd.to_datetime(d[time_col], errors="coerce")
+    d = d.dropna(subset=[time_col])
+
+    d = d[d[time_col] >= pd.Timestamp("2014-01-01", tz="UTC")]
+
+    # Optional sentiment filtering
+    if sentiment_col is not None and sentiment_value is not None:
+        d = d[d[sentiment_col] == sentiment_value]
+
+    # Keep only edges involving the subreddit
+    mask = (d[source_col] == subreddit_name) | (d[target_col] == subreddit_name)
+    d = d[mask].copy()
+    if d.empty:
+        print(f"No edges found for '{subreddit_name}' (with current filters).")
+        return
+
+    # Period binning
+    d["period"] = d[time_col].dt.to_period(freq).dt.to_timestamp()
+
+    # Ensure we have target coords; if missing, infer from SOURCE coords across whole df
+    if tx not in d.columns or ty not in d.columns:
+        coord_map = (
+            df[[source_col, sx, sy]]
+            .dropna()
+            .drop_duplicates(subset=[source_col])
+            .set_index(source_col)[[sx, sy]]
+        )
+        d = d.join(coord_map, on=target_col, rsuffix="_t")
+        d[tx] = d.get(f"{sx}_t")
+        d[ty] = d.get(f"{sy}_t")
+
+    d = d.dropna(subset=[sx, sy, tx, ty]).copy()
+    if d.empty:
+        print(f"Missing endpoint coordinates. Need '{tx}'/'{ty}' or inferable coords.")
+        return
+
+    # Helper to build line segments
+    def make_lines(edges, x0, y0, x1, y1):
+        xs, ys = [], []
+        for a, b, c, d_ in zip(edges[x0], edges[y0], edges[x1], edges[y1]):
+            xs += [a, c, None]
+            ys += [b, d_, None]
+        return xs, ys
+
+    periods = sorted(d["period"].unique())
+
+    # Precompute global axis bounds so the map doesn't jump around
+    x_min = float(np.nanmin(pd.concat([d[sx], d[tx]])))
+    x_max = float(np.nanmax(pd.concat([d[sx], d[tx]])))
+    y_min = float(np.nanmin(pd.concat([d[sy], d[ty]])))
+    y_max = float(np.nanmax(pd.concat([d[sy], d[ty]])))
+
+    # Build frames
+    frames = []
+    for p in periods:
+        dp = d[d["period"] == p].copy()
+
+        out_edges = dp[dp[source_col] == subreddit_name].copy()
+        in_edges  = dp[dp[target_col] == subreddit_name].copy()
+
+        # cap edges per frame for readability
+        if len(out_edges) > max_edges_per_frame:
+            out_edges = out_edges.sample(max_edges_per_frame, random_state=0)
+        if len(in_edges) > max_edges_per_frame:
+            in_edges = in_edges.sample(max_edges_per_frame, random_state=0)
+
+        out_xs, out_ys = make_lines(out_edges, sx, sy, tx, ty)
+        in_xs,  in_ys  = make_lines(in_edges,  sx, sy, tx, ty)
+
+        # nodes in this period
+        nodes = pd.concat([
+            out_edges[[source_col, sx, sy]].rename(columns={source_col:"sub", sx:"x", sy:"y"}),
+            out_edges[[target_col, tx, ty]].rename(columns={target_col:"sub", tx:"x", ty:"y"}),
+            in_edges[[source_col, sx, sy]].rename(columns={source_col:"sub", sx:"x", sy:"y"}),
+            in_edges[[target_col, tx, ty]].rename(columns={target_col:"sub", tx:"x", ty:"y"}),
+        ], ignore_index=True).drop_duplicates(subset=["sub"])
+
+        center = nodes[nodes["sub"] == subreddit_name]
+        others = nodes[nodes["sub"] != subreddit_name]
+
+        frame_data = [
+            # outgoing edges
+            go.Scatter(
+                x=out_xs, y=out_ys, mode="lines",
+                line=dict(width=1), opacity=0.7,
+                name="Outgoing", hoverinfo="skip"
+            ),
+            go.Scatter(
+                x=others["x"], y=others["y"],
+                mode="markers+text" if show_labels else "markers",
+                text=others["sub"] if show_labels else None,
+                textposition="top center",
+                marker=dict(size=7),
+                hovertext=others["sub"],
+                hoverinfo="text",
+                name="Other subreddits"
+            ),
+            # center node
+            go.Scatter(
+                x=center["x"] if not center.empty else [np.nan],
+                y=center["y"] if not center.empty else [np.nan],
+                mode="markers+text" if show_labels else "markers",
+                text=[subreddit_name] if (show_labels and not center.empty) else None,
+                textposition="top center",
+                marker=dict(size=12, symbol="star"),
+                hovertext=[subreddit_name] if not center.empty else None,
+                hoverinfo="text",
+                name=f"r/{subreddit_name}"
+            ),
+        ]
+
+        frames.append(go.Frame(name=str(p.date()), data=frame_data))
+
+    # Initial figure uses first frame
+    fig = go.Figure(data=frames[0].data, frames=frames)
+
+    # Slider + play/pause
+    steps = [
+        dict(
+            method="animate",
+            args=[[f.name], {"mode": "immediate", "frame": {"duration": 400, "redraw": True}, "transition": {"duration": 200}}],
+            label=f.name
+        )
+        for f in frames
+    ]
+
+    fig.update_layout(
+        template=template,
+        title=f"2D Connection Map Over Time — r/{subreddit_name} ({freq})",
+        xaxis=dict(title="x", range=[x_min, x_max]),
+        yaxis=dict(title="y", range=[y_min, y_max]),
+        legend_title="",
+        updatemenus=[dict(
+            type="buttons",
+            direction="left",
+            x=0.1, y=1.15,
+            buttons=[
+                dict(label="Play", method="animate",
+                     args=[None, {"frame": {"duration": 500, "redraw": True}, "transition": {"duration": 200}, "fromcurrent": True}]),
+                dict(label="Pause", method="animate",
+                     args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate"}]),
+            ],
+        )],
+        sliders=[dict(
+            active=0,
+            x=0.1, y=1.05,
+            len=0.8,
+            steps=steps
+        )]
+    )
+
+    fig.show()
+
+
+def plot_top_links_with_subreddit_time_slider(
+    df,
+    subreddit_name,
+    source_col="SOURCE_SUBREDDIT",
+    target_col="TARGET_SUBREDDIT",
+    sentiment_col="LINK_SENTIMENT",
+    negative_value=-1,
+    time_col="TIMESTAMP",
+    freq="M"  # "D", "W", or "M"
+):
+    df = df.copy()
+
+    # Keep only NEGATIVE links
+    df = df[df[sentiment_col] == negative_value]
+
+    df[time_col] = pd.to_datetime(df[time_col], errors="coerce")
+    df = df.dropna(subset=[time_col])
+
+    # Time binning
+    df["period"] = df[time_col].dt.to_period(freq).dt.to_timestamp()
+
+    # Keep only interactions involving the subreddit
+    mask = (df[source_col] == subreddit_name) | (df[target_col] == subreddit_name)
+    df_sub = df[mask].copy()
+
+    # Define the "other" subreddit
+    df_sub["other_sub"] = df_sub.apply(
+        lambda r: r[target_col] if r[source_col] == subreddit_name else r[source_col],
+        axis=1
+    )
+
+    # Aggregate counts per period
+    agg = (
+        df_sub
+        .groupby(["period", "other_sub"])
+        .size()
+        .reset_index(name="n_links")
+    )
+
+    # Keep Top-10 per period
+    agg["rank"] = agg.groupby("period")["n_links"].rank(method="first", ascending=False)
+    top10 = agg[agg["rank"] <= 10]
+
+    # --- global fixed x-range ---
+    global_max = top10["n_links"].max()
+    if pd.isna(global_max) or global_max <= 0:
+        global_max = 1
+    pad = 0.05 * global_max
+    x_range = [0, global_max + pad]
+
+    # Plot
+    fig = px.bar(
+        top10,
+        x="n_links",
+        y="other_sub",
+        color="n_links",
+        orientation="h",
+        animation_frame="period",
+        title=f"Top 10 Subreddits Most Negatively Linked With r/{subreddit_name}",
+        template="plotly_dark"
+    )
+
+    # Force fixed x-axis on main layout
+    fig.update_xaxes(autorange=False, range=x_range)
+
+    # 🔥 Force fixed x-axis on EVERY frame (this is the key)
+    for fr in fig.frames:
+        fr.layout = go.Layout(xaxis=dict(autorange=False, range=x_range))
+
+    fig.update_layout(
+        xaxis_title="Number of negative links",
+        yaxis_title="Subreddit",
+        yaxis={"categoryorder": "total ascending"},
+        transition={"duration": 300}
+    )
+
+    fig.show()

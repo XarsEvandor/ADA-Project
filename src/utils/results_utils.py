@@ -61,6 +61,14 @@ def barplot_sentiment_repartition(full_title_df, full_body_df):
     plt.grid(axis="y", linestyle="--", alpha=0.4)
     plt.show()
 
+def  create_2D_coordinates(df):
+    embeddings = df.iloc[:, 1:301].to_numpy()
+
+    coords = umap.UMAP(n_components=2, random_state=0, n_jobs=1).fit_transform(embeddings) # n_jobs=1 removes warning
+        
+    df["x"] = coords[:, 0]
+    df["y"] = coords[:, 1]
+    return df
 
 def plot_negative_links_over_time(df, label="Title"):
     """
@@ -950,7 +958,7 @@ def filter_subreddits_by_interaction_threshold(
     source_col="SOURCE_SUBREDDIT",
     target_col="TARGET_SUBREDDIT",
     threshold=50,
-    verbose=True
+    verbose=False
 ):
     """
     Filter out subreddits with fewer than `threshold` total interactions (in + out).
@@ -1012,7 +1020,7 @@ def filter_subreddits_by_interaction_threshold(
               f"({100*stats['removed_subreddits']/stats['initial_subreddits']:.2f}%)")
         print(f"   Rows before: {stats['initial_rows']:,}, after: {stats['kept_rows']:,}")
 
-    return filtered_df, stats
+    return filtered_df
 
 
 
