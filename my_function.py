@@ -27,6 +27,49 @@ def apply_dark_theme(fig):
     # Update axes if they exist
     fig.update_xaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
     fig.update_yaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
+    
+    # Sliders (for animated charts)
+    if fig.layout.sliders:
+        for slider in fig.layout.sliders:
+            slider.update(
+                bgcolor='#2a2d3a',
+                bordercolor='#dc2626',
+                font=dict(color='#e5e7eb'),
+                activebgcolor='#dc2626',
+                tickcolor='#e5e7eb',
+            )
+            if slider.currentvalue:
+                slider.currentvalue.update(font=dict(color='#e5e7eb'))
+    
+    # Updatemenus (Play/Pause buttons)
+    if fig.layout.updatemenus:
+        for menu in fig.layout.updatemenus:
+            menu.update(
+                bgcolor='#2a2d3a',
+                bordercolor='#dc2626',
+                font=dict(color='#e5e7eb'),
+            )
+    
+    # Polar charts (radar)
+    if fig.layout.polar:
+        fig.update_layout(
+            polar=dict(
+                bgcolor='rgba(18,19,26,1)',
+                angularaxis=dict(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#e5e7eb')),
+                radialaxis=dict(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#e5e7eb')),
+            )
+        )
+    
+    # Colorbar styling
+    if fig.layout.coloraxis and fig.layout.coloraxis.colorbar:
+        fig.layout.coloraxis.colorbar.update(tickfont=dict(color='#e5e7eb'), title_font_color='#e5e7eb')
+    
+    for trace in fig.data:
+        if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'colorbar') and trace.marker.colorbar:
+            trace.marker.colorbar.update(tickfont=dict(color='#e5e7eb'), title_font_color='#e5e7eb')
+        if hasattr(trace, 'colorbar') and trace.colorbar:
+            trace.colorbar.update(tickfont=dict(color='#e5e7eb'), title_font_color='#e5e7eb')
+    
     return fig
 
 
@@ -161,7 +204,7 @@ def plot_most_wanted_plotly(
     
     # Ligne verticale centrale
     fig.add_vline(x=0, line_width=1, line_color="black")
-
+    fig.write_html("most_wanted_plotly.html")
     fig.show()
 
 
@@ -261,6 +304,7 @@ def plot_tactical_map_interactive(merge_df, min_interactions=10):
         hovermode="closest"
     )
 
+    fig.write_html("most_wanted_plotly.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 
@@ -489,6 +533,7 @@ def plot_victim_semesters_slider(merge_df, top_n=10):
         }]
     )
 
+    fig.write_html("victim_semesters_slider_stabilized.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 
@@ -726,6 +771,7 @@ def visualiser_sarcasme_only_red(df, sample_size=5000):
         yaxis=dict(range=[-0.02, y_top])
     )
 
+    fig.write_html("sarcasm_honesty_plotly.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 

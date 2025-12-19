@@ -8,3 +8,11 @@ data
 .Trashes
 
 *.joblib
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+# Python cache
+*.pyc
+*.pyo
+*.pyd
+__pycache__
