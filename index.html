@@ -214,7 +214,7 @@
         <div class="relative z-10 text-center px-6 max-w-4xl">
             <div class="inline-block mb-8 reveal">
                 <span class="font-mono text-xs tracking-[4px] text-war-red border border-war-red px-4 py-2">
-                    FIELD MANUAL // ADA-2024
+                    FIELD MANUAL // ADA-2025
                 </span>
             </div>
             
@@ -245,6 +245,55 @@
         </div>
     </header>
 
+    <!-- ==================== INTRODUCTION/BRIEFING ==================== -->
+    <section id="briefing" class="py-24 bg-war-dark border-b border-war-gray/20 relative overflow-hidden">
+        
+        <div class="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+             <div class="w-32 h-32 border-r-2 border-t-2 border-war-red rounded-tr-3xl"></div>
+        </div>
+
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="grid md:grid-cols-12 gap-12 items-start">
+                
+                <div class="md:col-span-7 reveal">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-1 h-8 bg-war-red"></span>
+                        <h2 class="font-tactical text-3xl md:text-4xl font-bold text-white tracking-widest uppercase">
+                            Operational Context
+                        </h2>
+                    </div>
+                    
+                    <p class="text-xl text-war-text font-medium mb-6">
+                        The internet is not a safe space. It is a battlefield of ideas where communities can devolve into echo chambers in a matter of weeks.
+                    </p>
+                    
+                    <div class="space-y-4 text-war-text-dim text-lg leading-relaxed font-light">
+                        <p>
+                            We built this guide for one reason: <strong class="text-white font-normal">Survival.</strong>
+                        </p>
+                        <p>
+                            Using the <span class="font-mono text-war-red">ADA-2025 Subreddit's Hyperlinks Dataset</span>, we analyzed years of conflict history across Reddit. 
+                        </p>
+                        <p>
+                            This is not a policy document. It is a field manual based on forensic data analysis.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="md:col-span-5 reveal delay-100">
+                    <div class="bg-war-black/50 border border-war-gray/30 p-6 rounded-sm relative">
+                        <div class="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2 border-war-red"></div>
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2 border-war-red"></div>
+                        <div class="mt-8 p-4 bg-war-red/10 border border-war-red/20 text-xs text-war-red font-mono leading-relaxed">
+                            WARNING: The data presented below contains historical records of banned hate speech and radicalization patterns. Proceed with caution.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+    
     <!-- ==================== COLD CASES ==================== -->
     <section id="cold-cases" class="py-24 px-6 relative border-t border-war-gray">
         <div class="max-w-4xl mx-auto">
@@ -261,12 +310,13 @@
                 </p>
                 <p class="text-war-text-dim leading-relaxed mt-4">
                     To prove it, we deployed a model to patrol the archives. We aren't looking for noise: we are looking for <span class="text-war-red font-semibold">the silence</span>.
-                    Our algorithm scans for a signature pattern: <span class="text-war-text font-semibold">The Flatline</span>, specifically detecting a sudden, vertical drop in subreddits activity. One day, a subreddit is buzzing; the next, it hits zero.
+                    Our algorithm scans for a signature pattern: <span class="text-war-text font-semibold">The Flatline</span>, specifically detecting a sudden, vertical drop in subreddits activity. One day, a subreddit is buzzing, the next, it hits zero.
                     But we didn't just trust the math. We verified these candidates by locating external records confirming the bans and the reasons behind them.
                     <span class="text-war-text font-semibold">Inspect the external links in the case files below to uncover why they were taken down.</span>
                 </p>
             </div>
             
+            <!-- Case File 01 -->
             <div class="case-file p-6 mb-6 reveal">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="font-mono text-xs text-war-red">📂 CASE FILE 01</span>
@@ -303,6 +353,15 @@
                     <p><span class="text-war-red font-semibold">The Reality:</span> The "edge" was literal. A haven for radical anarchists who believed the only solution was violence.</p>
                     <p><span class="text-war-text font-semibold">The Lesson:</span> Toxicity isn't partisan.</p>
                 </div>
+
+                <div class="mt-4 pt-4 border-t border-war-gray/30">
+                    <a href="https://www.reddit.com/r/SubredditDrama/comments/5i5zv9/rleftwithsharpedge_has_been_banned/" target="_blank" class="inline-flex items-center gap-2 text-sm font-mono text-war-red hover:text-white transition-colors">
+                        <span>[ACCESS EXTERNAL RECORDS]</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                    </a>
+                </div>
             </div>
             
             <!-- Case File 03 -->
@@ -317,6 +376,15 @@
                     <p><span class="text-war-amber font-semibold">The Disguise:</span> A boring, bureaucratic name. Sounds like a government agency, right?</p>
                     <p><span class="text-war-red font-semibold">The Reality:</span> The Master of Camouflage. A hate group targeting the LGBT community using pseudo-science.</p>
                     <p><span class="text-war-text font-semibold">The Lesson:</span> This is the most dangerous type of content. It mimics authority to spread hate.</p>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-war-gray/30">
+                    <a href="https://www.reddit.com/r/OutOfTheLoop/comments/5bu60o/what_was_rpublichealthwatch_and_what_was_the/" target="_blank" class="inline-flex items-center gap-2 text-sm font-mono text-war-red hover:text-white transition-colors">
+                        <span>[ACCESS EXTERNAL RECORDS]</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                    </a>
                 </div>
             </div>
             
