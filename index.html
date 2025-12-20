@@ -1367,13 +1367,14 @@
                             resultHTML += `<span class="inline-block px-3 py-1 bg-war-green text-white font-mono text-sm">✓ NEUTRAL/POSITIVE</span>`;
                         }
                         resultHTML += `</div>`;
-                        resultHTML += `<div class="text-war-text-dim">`;
-                        // resultHTML += `<div><strong>Prediction:</strong> ${prediction}</div>`;
-                        resultHTML += `<div><strong>Prediction:</strong> ${isUnknown ? 'Unknown' : prediction}</div>`;
-                        if (probability !== null) {
-                            resultHTML += `<div><strong>Confidence:</strong> ${(probability * 100).toFixed(1)}%</div>`;
-                        }
-                        resultHTML += `</div></div>`;
+                        // resultHTML += `<div class="text-war-text-dim">`;
+                        // // resultHTML += `<div><strong>Prediction:</strong> ${prediction}</div>`;
+                        // resultHTML += `<div><strong>Prediction:</strong> ${isUnknown ? 'Unknown' : prediction}</div>`;
+                        // if (probability !== null) {
+                        //     resultHTML += `<div><strong>Confidence:</strong> ${(probability * 100).toFixed(1)}%</div>`;
+                        // }
+                        // resultHTML += `</div></div>`;
+                        resultHTML += `</div>`;
                         resultHTML += `<div class="mt-4 text-war-muted text-xs">Input: "${text}"</div>`;
                         
                         apiResultContent.innerHTML = resultHTML;
