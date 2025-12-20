@@ -6,9 +6,9 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-# --- 1. Configuration et Initialisation (s'exécute à l'import) ---
+# --- 1. Configuration and Initialization (executed on import) ---
 
-# Liste des features utilisées par le modèle
+# List of features used by the model
 FEATURES_COLS = [
     'Compound sentiment calculated by VADER',
     'Positive sentiment calculated by VADER',
@@ -23,7 +23,7 @@ FEATURES_COLS = [
     'Automated readability index'
 ]
 
-# Initialisation des outils NLTK (téléchargement silencieux si nécessaire)
+# Initialization of NLTK tools (silent download if required)
 try:
     nltk.data.find('sentiment/vader_lexicon.zip')
 except LookupError:
@@ -31,31 +31,31 @@ except LookupError:
     nltk.download('punkt', quiet=True)
     nltk.download('punkt_tab', quiet=True)
 
-# Initialisation de l'analyseur (variable globale au module)
+# Analyzer initialization (module-level global variable)
 sid = SentimentIntensityAnalyzer()
 
 
-# --- 2. Fonctions Utilitaires (Internes) ---
+# --- 2. Utility Functions (Internal) ---
 
 def _extraire_features_phrase(phrase):
     """
-    Transforme une phrase brute en un DataFrame d'une ligne contenant les features numériques.
+    Transforms a raw sentence into a single-row DataFrame containing numerical features.
     """
-    # Nettoyage et tokenization
+    # Cleaning and tokenization
     words = word_tokenize(phrase)
     sentences = sent_tokenize(phrase)
     num_chars = len(phrase)
     num_words = len(words)
     num_sentences = len(sentences)
     
-    # Gestion cas vide
+    # Handle empty case
     if num_words == 0: 
         return pd.DataFrame([[0]*len(FEATURES_COLS)], columns=FEATURES_COLS)
 
-    # Calculs VADER
+    # VADER sentiment scores
     scores = sid.polarity_scores(phrase)
     
-    # Calculs Structurels
+    # Structural feature calculations
     num_upper = sum(1 for c in phrase if c.isupper())
     frac_upper = num_upper / num_chars if num_chars > 0 else 0
     
@@ -65,7 +65,7 @@ def _extraire_features_phrase(phrase):
     num_long_words = sum(1 for w in words if len(w) >= 6)
     avg_word_len = sum(len(w) for w in words) / num_words
     
-    # Automated Readability Index
+    # Automated Readability Index (ARI)
     ari = 4.71 * (len(phrase.replace(" ", "")) / num_words) + 0.5 * (num_words / num_sentences) - 21.43
 
     data = {
@@ -82,60 +82,60 @@ def _extraire_features_phrase(phrase):
         'Automated readability index': ari
     }
     
-    # On renvoie un DataFrame ordonné selon FEATURES_COLS
+    # Return a DataFrame ordered according to FEATURES_COLS
     return pd.DataFrame([data], columns=FEATURES_COLS)
 
 
-# --- 3. Fonctions Principales (Pour le Notebook) ---
+# --- 3. Main Functions (For Notebook Usage) ---
 
 def train_model(df, target_col='LINK_SENTIMENT'):
     """
-    Entraîne le modèle RandomForest à partir du DataFrame global.
-    Retourne le modèle entraîné.
+    Trains a Random Forest model using the global DataFrame.
+    Returns the trained model.
     """
-    print("🔄 Préparation des données...")
+    print("🔄 Preparing data...")
     
-    # Vérification que les colonnes existent dans le DF
+    # Check that all required feature columns exist in the DataFrame
     missing_cols = [col for col in FEATURES_COLS if col not in df.columns]
     if missing_cols:
-        raise ValueError(f"Colonnes manquantes dans le DataFrame : {missing_cols}")
+        raise ValueError(f"Missing columns in the DataFrame: {missing_cols}")
 
     X = df[FEATURES_COLS]
-    # Conversion de la cible : si -1 alors 1 (Agresseur/Sarcasme), sinon 0
+    # Target conversion: -1 becomes 1 (aggressive/sarcastic), otherwise 0
     y = (df[target_col] == -1).astype(int)
 
-    print("✂️ Split Train/Test...")
+    print("✂️ Train/Test split...")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    print("🌲 Entraînement du Random Forest...")
+    print("🌲 Training Random Forest model...")
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
     score = model.score(X_test, y_test)
-    print(f"✅ Modèle entraîné avec succès ! Précision sur le set de test : {score:.2%}")
+    print(f"✅ Model trained successfully! Test set accuracy: {score:.2%}")
     
     return model
 
 
 def test_sentence(model, sentence, threshold=0.4):
     """
-    Utilise le modèle pour prédire si une phrase est sarcastique/négative.
+    Uses the trained model to predict whether a sentence is sarcastic or negative.
     """
-    # 1. Extraction des features
+    # 1. Feature extraction
     df_features = _extraire_features_phrase(sentence)
     
-    # 2. Prédiction (Probabilité de la classe 1)
+    # 2. Prediction (probability of class 1)
     proba_negatif = model.predict_proba(df_features)[0][1]
     
-    # 3. Décision
+    # 3. Decision rule
     prediction = 1 if proba_negatif >= threshold else 0
     
-    # 4. Affichage
-    print(f"📝 Phrase : \"{sentence}\"")
-    print(f"⚙️ Seuil : {threshold}")
+    # 4. Output display
+    print(f"📝 Sentence: \"{sentence}\"")
+    print(f"⚙️ Threshold: {threshold}")
     
     if prediction == 1:
-        print(f"🔴 RÉSULTAT : TOXIQUE / NEGATIF (Probabilité : {proba_negatif:.1%})")
+        print(f"🔴 Result: TOXIC / NEGATIVE (Probability: {proba_negatif:.1%})")
     else:
-        print(f"🟢 RÉSULTAT : NORMAL / POSITIF (Score toxique : {proba_negatif:.1%})")
+        print(f"🟢 Result: NORMAL / POSITIVE (Toxicity score: {proba_negatif:.1%})")
     print("-" * 30)
