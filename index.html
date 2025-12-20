@@ -1349,20 +1349,26 @@
                         const result = await response.json();
                         
                         // Display result with styling based on prediction
-                        const prediction = result.prediction || result.label || 'Unknown';
-                        const probability = result.probability || result.confidence || null;
-                        const isNegative = prediction.toLowerCase().includes('negative') || prediction === -1 || prediction === '-1';
+                        // const prediction = result.prediction || 'Unknown';
+                        // const probability = result.probability || result.confidence || null;
+                        // const isNegative = prediction.toLowerCase().includes('negative') || prediction === -1 || prediction === '-1';
+                        const prediction = result.prediction;
+                        const isNegative = prediction === 1;
+                        const isUnknown = prediction !== 0 && prediction !== 1;
                         
                         let resultHTML = `<div class="flex items-center gap-4">`;
                         resultHTML += `<div class="flex-shrink-0">`;
-                        if (isNegative) {
+                        if (isUnknown) {
+                            resultHTML += `<span class="inline-block px-3 py-1 bg-gray-500 text-white font-mono text-sm">? UNKNOWN</span>`;
+                        } else if (isNegative) {
                             resultHTML += `<span class="inline-block px-3 py-1 bg-war-red text-white font-mono text-sm">⚠ THREAT DETECTED</span>`;
                         } else {
                             resultHTML += `<span class="inline-block px-3 py-1 bg-war-green text-white font-mono text-sm">✓ NEUTRAL/POSITIVE</span>`;
                         }
                         resultHTML += `</div>`;
                         resultHTML += `<div class="text-war-text-dim">`;
-                        resultHTML += `<div><strong>Prediction:</strong> ${prediction}</div>`;
+                        // resultHTML += `<div><strong>Prediction:</strong> ${prediction}</div>`;
+                        resultHTML += `<div><strong>Prediction:</strong> ${isUnknown ? 'Unknown' : prediction}</div>`;
                         if (probability !== null) {
                             resultHTML += `<div><strong>Confidence:</strong> ${(probability * 100).toFixed(1)}%</div>`;
                         }
