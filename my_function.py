@@ -22,8 +22,16 @@ def apply_dark_theme(fig):
         plot_bgcolor='rgba(18,19,26,1)',
         font=dict(color='#e5e7eb', family='Space Grotesk, sans-serif'),
         title_font=dict(color='#e5e7eb'),
-        legend=dict(bgcolor='rgba(0,0,0,0)', font=dict(color='#9ca3af')),
-    )
+        legend=dict(
+            bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#9ca3af'),
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='left',
+            x=0
+        ),
+            )
     # Update axes if they exist
     fig.update_xaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
     fig.update_yaxes(gridcolor='#2a2d3a', linecolor='#2a2d3a', tickfont=dict(color='#9ca3af'))
@@ -1842,6 +1850,8 @@ def plot_spike_cascades(
         fig.update_layout(
             yaxis={"categoryorder": "total ascending"}
         )
+        
+        fig.write_html("cascade_spreaders.html", full_html=False, include_plotlyjs='cdn')
         fig.show()
 
         display(cascade_df.head())
@@ -1919,6 +1929,7 @@ def plot_in_out_over_time(
         template="plotly_dark"
     )
 
+    fig.write_html("in_out_over_time.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 def plot_outgoing_pos_neg_over_time(
@@ -1999,6 +2010,7 @@ def plot_outgoing_pos_neg_over_time(
         template="plotly_dark"
     )
 
+    fig.write_html("outgoing_pos_neg_over_time.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 def plot_subreddit_connections_2d_overtime(
@@ -2175,6 +2187,7 @@ def plot_subreddit_connections_2d_overtime(
         )]
     )
 
+    fig.write_html("subreddit_connections_2d_overtime.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
 
 
@@ -2254,4 +2267,5 @@ def plot_top_links_with_subreddit_time_slider(
         transition={"duration": 300}
     )
 
+    fig.write_html("top_links_with_subreddit_time_slider.html", full_html=False, include_plotlyjs='cdn')
     fig.show()
