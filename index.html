@@ -1353,6 +1353,7 @@
                         // const probability = result.probability || result.confidence || null;
                         // const isNegative = prediction.toLowerCase().includes('negative') || prediction === -1 || prediction === '-1';
                         const prediction = result.prediction;
+                        const probability = result.probability_toxic || null;
                         const isNegative = prediction === 1;
                         const isUnknown = prediction !== 0 && prediction !== 1;
                         
