@@ -1539,53 +1539,6 @@
                 });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            //1.2
-            loadAnimatedChart('chart-tactical-map', 'tactical_map.json');
-            //2.1
-            loadAnimatedChart('chart-semantic-distance', 'semantic_distance.json');
-            //4.1.c
-            loadAnimatedChart('chart-liwc-diff', 'liwc_diff.json');
-            //4.2
-            loadAnimatedChart('chart-sarcasm', 'sarcasm_plot.json');
-            //4.4
-            loadAnimatedChart('chart-top-sarcastic', 'top_sarcastic.json');
-
-
-            loadAnimatedChart('chart-ban-visualization', 'ban_visualization.json');
-            
-            // Part 1: Topological Analysis
-            loadAnimatedChart('chart-most-wanted', 'most_wanted.json');
-            // loadChart('chart-tactical-map', 'tactical_map.json');
-            loadAnimatedChart('chart-temporal-rainplot', 'temporal_rainplot.json');
-            // loadChart('chart-victim-evolution', 'victim_evolution.json');
-            loadAnimatedChart('chart-top-victims-evolution', 'top_victims.json');
-            
-            // Part 2: Semantic Analysis
-            // loadChart('chart-semantic-distance', 'semantic_distance.json');
-            loadAnimatedChart('chart-tribal-warfare', 'tribal_warfare_matrix.json');
-            loadAnimatedChart('chart-tribe-radar', 'tribe_radar.json');
-            loadAnimatedChart('chart-ballistics', 'ballistics_report.json');
-            
-            // Part 3: Signal Intelligence (Placeholders for future charts)
-            loadAnimatedChart('chart-cascade-leaderboard', 'cascade_leaderboard.json');
-            loadAnimatedChart('chart-srd-temporal', 'srd_temporal.json');
-            loadAnimatedChart('chart-srd-in-out', 'srd_in_out.json');
-            loadAnimatedChart('chart-heart-of-galaxy', 'heart_of_galaxy.json');
-            loadAnimatedChart('chart-srd-time-slider', 'srd_time_slider.json');
-            
-            // Part 4: Linguistic Analysis
-            loadAnimatedChart('chart-wordclouds', 'wordclouds.json');
-            loadAnimatedChart('chart-liwc-radar', 'liwc_radar.json');
-            // loadChart('chart-liwc-diff', 'liwc_diff.json');
-            // loadChart('chart-sarcasm', 'sarcasm_plot.json');
-            // loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
-            
-            // Part 5: When & Where
-            loadAnimatedChart('chart-temporal-heatmap', 'temporal_heatmap.json');
-            loadAnimatedChart('chart-attack-origin', 'attack_origin.json');
-        });
-
         const revealOnScroll = () => {
             const reveals = document.querySelectorAll('.reveal');
             reveals.forEach(el => {
@@ -1609,8 +1562,7 @@
                 }
             });
         });
-    </script>
-    <script>
+
         // Dark theme for Plotly charts - Comprehensive version
         const darkTheme = {
             paper_bgcolor: '#12131a',
@@ -1810,38 +1762,43 @@
         // Load all charts
         document.addEventListener('DOMContentLoaded', () => {
             // Cold Cases
-            // loadChart('chart-ban-visualization', 'ban_visualization.json');
-            
+            loadChart('chart-ban-visualization', 'ban_visualization.json');
+
             // Part 1: Topological Analysis
-            // loadChart('chart-most-wanted', 'most_wanted.json');
-            // loadChart('chart-tactical-map', 'tactical_map.json');
-            // loadChart('chart-temporal-rainplot', 'temporal_rainplot.json');
+            loadChart('chart-most-wanted', 'most_wanted.json');
+            //1.2
+            loadAnimatedChart('chart-tactical-map', 'tactical_map.json');
+            loadChart('chart-temporal-rainplot', 'temporal_rainplot.json');
             // loadChart('chart-victim-evolution', 'victim_evolution.json');
-            // loadChart('chart-top-victims-evolution', 'top_victims.json');
+            loadChart('chart-top-victims-evolution', 'top_victims.json');
             
             // Part 2: Semantic Analysis
-            // loadChart('chart-semantic-distance', 'semantic_distance.json');
-            // loadChart('chart-tribal-warfare', 'tribal_warfare_matrix.json');
-            // loadChart('chart-tribe-radar', 'tribe_radar.json');
-            // loadChart('chart-ballistics', 'ballistics_report.json');
+            //2.1
+            loadAnimatedChart('chart-semantic-distance', 'semantic_distance.json');
+            loadChart('chart-tribal-warfare', 'tribal_warfare_matrix.json');
+            loadChart('chart-tribe-radar', 'tribe_radar.json');
+            loadChart('chart-ballistics', 'ballistics_report.json');
             
             // Part 3: Signal Intelligence (Placeholders for future charts)
-            // loadChart('chart-cascade-leaderboard', 'cascade_leaderboard.json');
-            // loadChart('chart-srd-temporal', 'srd_temporal.json');
-            // loadChart('chart-srd-in-out', 'srd_in_out.json');
-            // loadChart('chart-heart-of-galaxy', 'heart_of_galaxy.json');
-            // loadChart('chart-srd-time-slider', 'srd_time_slider.json');
+            loadChart('chart-cascade-leaderboard', 'cascade_leaderboard.json');
+            loadChart('chart-srd-temporal', 'srd_temporal.json');
+            loadChart('chart-srd-in-out', 'srd_in_out.json');
+            loadChart('chart-heart-of-galaxy', 'heart_of_galaxy.json');
+            loadChart('chart-srd-time-slider', 'srd_time_slider.json');
             
             // Part 4: Linguistic Analysis
-            // loadChart('chart-wordclouds', 'wordclouds.json');
-            // loadChart('chart-liwc-radar', 'liwc_radar.json');
-            // loadChart('chart-liwc-diff', 'liwc_diff.json');
-            // loadChart('chart-sarcasm', 'sarcasm_plot.json');
-            // loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
+            loadChart('chart-wordclouds', 'wordclouds.json');
+            loadChart('chart-liwc-radar', 'liwc_radar.json');
+            //4.1.c
+            loadAnimatedChart('chart-liwc-diff', 'liwc_diff.json');
+            //4.2
+            loadAnimatedChart('chart-sarcasm', 'sarcasm_plot.json');
+            //4.4
+            loadAnimatedChart('chart-top-sarcastic', 'top_sarcastic.json');
             
             // Part 5: When & Where
-            // loadChart('chart-temporal-heatmap', 'temporal_heatmap.json');
-            // loadChart('chart-attack-origin', 'attack_origin.json');
+            loadChart('chart-temporal-heatmap', 'temporal_heatmap.json');
+            loadChart('chart-attack-origin', 'attack_origin.json');
             
             // API Call Handler
             const apiSubmit = document.getElementById('api-submit');
