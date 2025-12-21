@@ -1794,7 +1794,7 @@
             //4.2
             loadAnimatedChart('chart-sarcasm', 'sarcasm_plot.json');
             //4.4
-            loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
+            loadAnimatedChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
             
             // Part 5: When & Where
             loadChart('chart-temporal-heatmap', 'temporal_heatmap.json');
@@ -1916,18 +1916,18 @@
         });
 
         // Scroll reveal
-        const revealElements = document.querySelectorAll('.reveal');
-        const revealOnScroll = () => {
-            revealElements.forEach(el => {
-                const windowHeight = window.innerHeight;
-                const elementTop = el.getBoundingClientRect().top;
-                if (elementTop < windowHeight - 150) {
-                    el.classList.add('active');
-                }
-            });
-        };
-        window.addEventListener('scroll', revealOnScroll);
-        window.addEventListener('load', revealOnScroll);
+        // const revealElements = document.querySelectorAll('.reveal');
+        // const revealOnScroll = () => {
+        //     revealElements.forEach(el => {
+        //         const windowHeight = window.innerHeight;
+        //         const elementTop = el.getBoundingClientRect().top;
+        //         if (elementTop < windowHeight - 150) {
+        //             el.classList.add('active');
+        //         }
+        //     });
+        // };
+        // window.addEventListener('scroll', revealOnScroll);
+        // window.addEventListener('load', revealOnScroll);
 
         // Navigation dots
         const sections = document.querySelectorAll('section[id], header[id]');
