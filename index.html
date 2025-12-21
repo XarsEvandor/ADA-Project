@@ -1213,7 +1213,7 @@
                         Positive values (red) indicate weapons of war. Negative values (blue) indicate diplomatic language that attackers avoid.
                     </p>
                     
-                    <div id="chart-liwc-diff" class="chart-container mb-6"></div>
+                    <div id="chart-liwc-diff" class="chart-container mb-6" style="height: 600px;"></div>
                 </div>
 
                 <!-- 4.1 The ML Model -->
@@ -1497,6 +1497,86 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
+        function loadAnimatedChart(elementId, jsonPath) {
+            const container = document.getElementById(elementId);
+            if (!container) {
+                console.warn(`[Target Missing] ID: ${elementId} not found.`);
+                return;
+            }
+
+            fetch(`chart_exports/${jsonPath}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(graphData => {
+                    var config = {
+                        responsive: true,
+                        displayModeBar: false,
+                        scrollZoom: false
+                    };
+                    Plotly.newPlot(elementId, graphData.data, graphData.layout, config).then(function() {
+                        if (graphData.frames) {
+                            Plotly.addFrames(elementId, graphData.frames);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Chart Load Error:', error);
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full border border-war-red/30 bg-war-red/5 p-4 text-center">
+                            <div class="font-mono text-war-red text-xl mb-2 font-bold">SIGNAL LOST</div>
+                            <p class="text-war-muted text-sm mb-4">Cannot load intel package: <span class="font-mono text-war-text">${jsonPath}</span></p>
+                            <div class="text-xs text-war-amber border border-war-amber/30 p-2 rounded bg-black/50">
+                                <strong>SOLUTION:</strong><br>
+                                Browsers block local file access.<br>
+                                You must run a local server (see Step 2).
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            //1.2
+            loadAnimatedChart('chart-tactical-map', 'tactical_map.json');
+            //2.1
+            loadAnimatedChart('chart-semantic-distance', 'semantic_distance.json');
+            //4.1.c
+            loadAnimatedChart('chart-liwc-diff', 'liwc_diff.json');
+            //4.2
+            loadAnimatedChart('chart-sarcasm', 'sarcasm_plot.json');
+            //4.4
+            loadAnimatedChart('chart-top-sarcastic', 'top_sarcastic.json');
+        });
+
+        const revealOnScroll = () => {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(el => {
+                const windowHeight = window.innerHeight;
+                const elementTop = el.getBoundingClientRect().top;
+                if (elementTop < windowHeight - 150) {
+                    el.classList.add('active');
+                }
+            });
+        };
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        // Smooth Scrolling for Nav Dots
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+    <script>
         // Dark theme for Plotly charts - Comprehensive version
         const darkTheme = {
             paper_bgcolor: '#12131a',
@@ -1700,13 +1780,13 @@
             
             // Part 1: Topological Analysis
             loadChart('chart-most-wanted', 'most_wanted.json');
-            loadChart('chart-tactical-map', 'tactical_map.json');
+            // loadChart('chart-tactical-map', 'tactical_map.json');
             loadChart('chart-temporal-rainplot', 'temporal_rainplot.json');
             // loadChart('chart-victim-evolution', 'victim_evolution.json');
             loadChart('chart-top-victims-evolution', 'top_victims.json');
             
             // Part 2: Semantic Analysis
-            loadChart('chart-semantic-distance', 'semantic_distance.json');
+            // loadChart('chart-semantic-distance', 'semantic_distance.json');
             loadChart('chart-tribal-warfare', 'tribal_warfare_matrix.json');
             loadChart('chart-tribe-radar', 'tribe_radar.json');
             loadChart('chart-ballistics', 'ballistics_report.json');
@@ -1721,9 +1801,9 @@
             // Part 4: Linguistic Analysis
             loadChart('chart-wordclouds', 'wordclouds.json');
             loadChart('chart-liwc-radar', 'liwc_radar.json');
-            loadChart('chart-liwc-diff', 'liwc_diff.json');
-            loadChart('chart-sarcasm', 'sarcasm_plot.json');
-            loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
+            // loadChart('chart-liwc-diff', 'liwc_diff.json');
+            // loadChart('chart-sarcasm', 'sarcasm_plot.json');
+            // loadChart('chart-top-sarcastic', 'top_sarcastic_subreddits.json');
             
             // Part 5: When & Where
             loadChart('chart-temporal-heatmap', 'temporal_heatmap.json');
